@@ -25,6 +25,8 @@ import { WorkspaceNav, type WorkspaceView } from "./components/WorkspaceNav";
 import { useServiceStatus } from "./useServiceStatus";
 import { useWorkbench } from "./useWorkbench";
 import { useReviewWorkflow } from "./useReviewWorkflow";
+import { workspacePath } from "./app/router";
+import { isReadOnly } from "./permissions/permissions";
 import type { CanonOperation } from "./types";
 import "./book-audit.css";
 
@@ -50,17 +52,33 @@ function errorCopy(error: string) {
   return error;
 }
 
-function App() {
+interface AppProps { initialNovelId?: string; initialView?: WorkspaceView; }
+
+function App({ initialNovelId, initialView = "write" }: AppProps) {
   const session = useSession();
   const authEnabled = session.status === "loading" ? undefined : session.enabled;
   const authUser = session.user;
+  const readOnly = isReadOnly(authUser?.role);
   const workbench = useWorkbench(authEnabled === false || (authEnabled === true && authUser !== null));
   const serviceStatus = useServiceStatus();
   const [activeDialog, setActiveDialog] = useState<DialogName>();
-  const [workspaceView, setWorkspaceView] = useState<WorkspaceView>("write");
+  const [workspaceView, setWorkspaceView] = useState<WorkspaceView>(initialView);
   const [readerFocus, setReaderFocus] = useState<WritingReaderFocus>();
   const [createOpen, setCreateOpen] = useState(false);
   const { novel, state, error, isStreaming, lastNode } = workbench;
+  useEffect(() => {
+    if (initialNovelId && workbench.novels.some((item) => item.id === initialNovelId) && workbench.selectedId !== initialNovelId) {
+      workbench.setSelectedId(initialNovelId);
+    }
+  }, [initialNovelId, workbench.novels, workbench.selectedId]);
+  useEffect(() => {
+    if (initialView) setWorkspaceView(initialView);
+  }, [initialView]);
+  useEffect(() => {
+    if (!workbench.selectedId) return;
+    const target = workspacePath(workbench.selectedId, workspaceView);
+    if (window.location.pathname !== target) window.history.replaceState({}, "", target);
+  }, [workbench.selectedId, workspaceView]);
   const reviewWorkflow = useReviewWorkflow({
     novelId: workbench.selectedId ?? "",
     chapterNumber: state?.current_draft.chapter_number ?? 0,
@@ -78,8 +96,23 @@ function App() {
   }, [authEnabled, error]);
 
   useEffect(() => {
-    setWorkspaceView(planningReview ? "plan" : "write");
-  }, [workbench.selectedId, planningReview]);
+    if (!initialView) setWorkspaceView(planningReview ? "plan" : "write");
+  }, [workbench.selectedId, planningReview, initialView]);
+
+  function changeWorkspaceView(view: WorkspaceView) {
+    setWorkspaceView(view);
+    if (workbench.selectedId) {
+      const target = workspacePath(workbench.selectedId, view);
+      window.history.pushState({}, "", target);
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    }
+  }
+
+  function selectNovel(id: string) {
+    workbench.setSelectedId(id);
+    window.history.pushState({}, "", workspacePath(id, workspaceView));
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }
 
   function openBenchmarks() {
     setActiveDialog("benchmarks");
@@ -102,7 +135,7 @@ function App() {
         serviceStatus={serviceStatus}
         createOpen={createOpen}
         onCreateOpenChange={setCreateOpen}
-        onSelect={workbench.setSelectedId}
+        onSelect={selectNovel}
         onCreate={workbench.addNovel}
         onDelete={(item) => workbench.removeNovel(item.id)}
       />
@@ -128,7 +161,7 @@ function App() {
           <>
             <ProjectOverview novel={novel} state={state} statusLabel={statusLabel(state.status)} />
             <StageRail lastNode={lastNode} status={state.status} currentPhase={state.current_phase} />
-            <WorkspaceNav active={workspaceView} status={state.status} issueCount={state.conflicts?.length || state.issues.length} onChange={setWorkspaceView} />
+            <WorkspaceNav active={workspaceView} status={state.status} issueCount={state.conflicts?.length || state.issues.length} onChange={changeWorkspaceView} />
 
             {state.replan_proposal?.status === "replanned" ? <div className="replan-callout" role="status"><GitBranch size={16} /><div><strong>后续大纲已调整</strong><span>{state.replan_proposal.rationale || "系统根据最新定稿更新了未来章节。"}</span></div></div> : null}
             {state.replan_proposal?.status === "error" ? <div className="replan-callout warning" role="status"><AlertCircle size={16} /><div><strong>后续大纲保持不变</strong><span>{state.replan_proposal.rationale || "重规划未应用，当前大纲继续有效。"}</span></div></div> : null}
@@ -142,17 +175,17 @@ function App() {
                 outline={state.outline ?? []}
                 scenePlan={state.scene_plan ?? []}
                 planningVersions={state.planning_versions ?? []}
-                disabled={isStreaming}
+                disabled={isStreaming || readOnly}
                 onSubmit={workbench.resume}
                 onLoadVersion={workbench.loadPlanningVersion}
                 onCompareVersions={workbench.comparePlanningVersions}
               />
             ) : <PlanningWorkspace state={state} /> : null}
 
-            {workspaceView === "knowledge" ? <KnowledgeWorkspace novel={novel} state={state} onOpenBrief={() => setActiveDialog("brief")} onOpenCanon={() => setActiveDialog("canon")} onOpenMemory={() => setActiveDialog("memory")} /> : null}
+            {workspaceView === "knowledge" ? <KnowledgeWorkspace novel={novel} state={state} onOpenBrief={() => !readOnly && setActiveDialog("brief")} onOpenCanon={() => !readOnly && setActiveDialog("canon")} onOpenMemory={() => setActiveDialog("memory")} /> : null}
 
             {workspaceView === "quality" ? state.status === "completed" && state.book_audit ? (
-              <div className="workspace-book-audit"><BookAuditPanel report={state.book_audit} totalChapters={state.total_chapters} disabled={isStreaming} onStartRevision={workbench.startBookRevision} /></div>
+              <div className="workspace-book-audit"><BookAuditPanel report={state.book_audit} totalChapters={state.total_chapters} disabled={isStreaming || readOnly} onStartRevision={readOnly ? async () => undefined : workbench.startBookRevision} /></div>
             ) : <QualityWorkspace state={state} onOpenMonitoring={() => setActiveDialog("monitoring")} onOpenBenchmarks={openBenchmarks} onOpenTraces={openTraces} /> : null}
 
             {workspaceView === "write" ? <WritingWorkspace
@@ -163,18 +196,18 @@ function App() {
               connectionStatus={workbench.connectionStatus}
               lastNode={lastNode}
               isStreaming={isStreaming}
-              onRun={workbench.run}
+              onRun={readOnly ? async () => undefined : workbench.run}
               onCancel={workbench.cancelJob}
               onRetry={workbench.retryRunConnection}
               reviewWorkflow={reviewWorkflow}
-              onApplyCanon={workbench.updateCanon}
-              onGenerateCandidates={workbench.generateCandidates}
+              onApplyCanon={readOnly ? async () => undefined : workbench.updateCanon}
+              onGenerateCandidates={readOnly ? async () => undefined : workbench.generateCandidates}
               onCompareVersions={workbench.compareVersions}
               onEvaluateVersion={workbench.evaluateVersion}
               onSetEvaluationBaseline={workbench.setEvaluationBaseline}
               onCompareEvaluations={workbench.compareEvaluations}
-              onOpenPlanning={() => setWorkspaceView("plan")}
-              onOpenQuality={() => setWorkspaceView("quality")}
+              onOpenPlanning={() => changeWorkspaceView("plan")}
+              onOpenQuality={() => changeWorkspaceView("quality")}
             /> : null}
           </>
         )}

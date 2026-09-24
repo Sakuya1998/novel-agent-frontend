@@ -4,6 +4,19 @@ import App from "../App";
 import { LoginPage } from "../pages/auth/LoginPage";
 import { RegisterPage } from "../pages/auth/RegisterPage";
 import { WorkspaceOverviewPage } from "../pages/workspaces/WorkspaceOverviewPage";
+import type { WorkspaceView } from "../components/WorkspaceNav";
+
+const NOVEL_VIEWS = ["overview", "write", "plan", "knowledge", "quality"] as const;
+export type NovelRouteView = typeof NOVEL_VIEWS[number];
+
+export function parseNovelRoute(path: string): { novelId: string; view: NovelRouteView } | null {
+  const match = path.match(/^\/novels\/([^/]+)\/(overview|write|plan|knowledge|quality)\/?$/);
+  return match ? { novelId: decodeURIComponent(match[1]), view: match[2] as NovelRouteView } : null;
+}
+
+export function workspacePath(novelId: string, view: WorkspaceView | "overview" = "write") {
+  return `/novels/${encodeURIComponent(novelId)}/${view}`;
+}
 
 function navigate(path: string) {
   if (window.location.pathname === path) return;
@@ -24,6 +37,8 @@ export function AppRouter() {
   if (path === "/login") return <LoginPage onNavigate={go} />;
   if (path === "/register") return <RegisterPage onNavigate={go} />;
   if (path.startsWith("/app/workspaces/") && path.endsWith("/overview")) return <WorkspaceOverviewPage onNavigate={go} />;
+  const novelRoute = parseNovelRoute(path);
+  if (novelRoute) return <App initialNovelId={novelRoute.novelId} initialView={novelRoute.view === "overview" ? "write" : novelRoute.view} />;
   return <App />;
 }
 
