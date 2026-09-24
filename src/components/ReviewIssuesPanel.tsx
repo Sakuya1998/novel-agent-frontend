@@ -60,31 +60,97 @@ export function ReviewIssuesPanel({
     }
   }
 
-  return <div className="review-issues-panel">
-    {persistenceError ? <div className="error-callout" role="alert"><AlertTriangle size={16} /><span>{persistenceError}</span></div> : null}
-    {(displayedConflicts.length > 0) ? <div className="issue-block">
-      <div className="block-label"><AlertTriangle size={14} />一致性检查</div>
-      {displayedConflicts.map((conflict) => <div className="issue" key={conflict.conflict_id}>
-        <span className={`severity ${conflict.severity || "low"}`}>{conflict.severity || "low"}</span>
-        <div>
-          <p>{conflict.description || conflict.title}</p>
-          <button type="button" className="issue-detail-toggle" onClick={() => setExpandedConflict((current) => current === conflict.conflict_id ? undefined : conflict.conflict_id)}>
-            {expandedConflict === conflict.conflict_id ? "收起详情" : "查看证据与建议"}
-          </button>
-          {expandedConflict === conflict.conflict_id ? <div className="issue-detail">
-            {conflict.impact ? <p className="issue-impact">{conflict.impact}</p> : null}
-            {conflict.evidence.length > 0 ? <div className="issue-evidence">{conflict.evidence.map((item, index) => <div key={`${item.label}-${index}`}><strong>{item.label}</strong><span>{typeof item.value === "string" ? item.value : JSON.stringify(item.value)}</span></div>)}</div> : null}
-            <div className="issue-repair-actions">{conflict.repair_options.map((option) => <button type="button" className="secondary-button" key={option.id} disabled={controlsDisabled} onClick={() => void applyRepair(option)}>
-              {busyAction === "canon" && option.kind === "canon_operation" ? "处理中…" : busyAction === "revision" && option.kind === "revision_feedback" ? "处理中…" : option.label}
-            </button>)}</div>
-          </div> : null}
+  return (
+    <div className="review-issues-panel">
+      {persistenceError ? (
+        <div className="error-callout" role="alert">
+          <AlertTriangle size={16} />
+          <span>{persistenceError}</span>
         </div>
-      </div>)}
-    </div> : null}
-    {qualityReport ? <div className="quality-gate-block">
-      <div className="block-label"><Gauge size={14} />自动质量门</div>
-      <div className={`quality-gate-score ${qualityReport.passed ? "passed" : "attention"}`}><strong>{qualityReport.overall_score.toFixed(1)}</strong><span>/ {qualityReport.threshold.toFixed(1)}</span><em>{qualityReport.passed ? "通过" : qualityReport.status === "escalated" ? "转人工" : "待改进"}</em></div>
-      {qualityReport.findings?.filter((item) => item.score < qualityReport.threshold).slice(0, 3).map((item) => <p className="quality-gate-finding" key={item.dimension}><strong>{item.dimension}</strong><span>{item.score.toFixed(1)} 分 · {item.message}</span></p>)}
-    </div> : null}
-  </div>;
+      ) : null}
+      {displayedConflicts.length > 0 ? (
+        <div className="issue-block">
+          <div className="block-label">
+            <AlertTriangle size={14} />
+            一致性检查
+          </div>
+          {displayedConflicts.map((conflict) => (
+            <div className="issue" key={conflict.conflict_id}>
+              <span className={`severity ${conflict.severity || "low"}`}>{conflict.severity || "low"}</span>
+              <div>
+                <p>{conflict.description || conflict.title}</p>
+                <button
+                  type="button"
+                  className="issue-detail-toggle"
+                  onClick={() =>
+                    setExpandedConflict((current) =>
+                      current === conflict.conflict_id ? undefined : conflict.conflict_id,
+                    )
+                  }
+                >
+                  {expandedConflict === conflict.conflict_id ? "收起详情" : "查看证据与建议"}
+                </button>
+                {expandedConflict === conflict.conflict_id ? (
+                  <div className="issue-detail">
+                    {conflict.impact ? <p className="issue-impact">{conflict.impact}</p> : null}
+                    {conflict.evidence.length > 0 ? (
+                      <div className="issue-evidence">
+                        {conflict.evidence.map((item, index) => (
+                          <div key={`${item.label}-${index}`}>
+                            <strong>{item.label}</strong>
+                            <span>{typeof item.value === "string" ? item.value : JSON.stringify(item.value)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                    <div className="issue-repair-actions">
+                      {conflict.repair_options.map((option) => (
+                        <button
+                          type="button"
+                          className="secondary-button"
+                          key={option.id}
+                          disabled={controlsDisabled}
+                          onClick={() => void applyRepair(option)}
+                        >
+                          {busyAction === "canon" && option.kind === "canon_operation"
+                            ? "处理中…"
+                            : busyAction === "revision" && option.kind === "revision_feedback"
+                              ? "处理中…"
+                              : option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {qualityReport ? (
+        <div className="quality-gate-block">
+          <div className="block-label">
+            <Gauge size={14} />
+            自动质量门
+          </div>
+          <div className={`quality-gate-score ${qualityReport.passed ? "passed" : "attention"}`}>
+            <strong>{qualityReport.overall_score.toFixed(1)}</strong>
+            <span>/ {qualityReport.threshold.toFixed(1)}</span>
+            <em>{qualityReport.passed ? "通过" : qualityReport.status === "escalated" ? "转人工" : "待改进"}</em>
+          </div>
+          {qualityReport.findings
+            ?.filter((item) => item.score < qualityReport.threshold)
+            .slice(0, 3)
+            .map((item) => (
+              <p className="quality-gate-finding" key={item.dimension}>
+                <strong>{item.dimension}</strong>
+                <span>
+                  {item.score.toFixed(1)} 分 · {item.message}
+                </span>
+              </p>
+            ))}
+        </div>
+      ) : null}
+    </div>
+  );
 }

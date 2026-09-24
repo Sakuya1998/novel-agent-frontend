@@ -3,8 +3,8 @@
 独立的 React + TypeScript 工作台源码。开发时需另行启动兼容 API 服务：
 
 ```powershell
-npm ci
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 Vite 默认将 `/api`、`/healthz` 和 `/readyz` 代理到 `http://127.0.0.1:8000`。如需更换目标，设置 `VITE_API_PROXY_TARGET`；生产构建可通过 `VITE_API_BASE` 指定 API origin，留空时使用同源 Nginx 代理。
@@ -12,9 +12,9 @@ Vite 默认将 `/api`、`/healthz` 和 `/readyz` 代理到 `http://127.0.0.1:800
 常用检查：
 
 ```powershell
-npm run check
+pnpm run check
 ```
 
-浏览器 E2E 需要一个可用的 API 仓库 checkout。设置 `NOVEL_AGENT_API_ROOT` 指向后端仓库后，再运行 `npm run test:e2e`；不设置时 Playwright 只会启动前端，不会假装拥有后端服务。
+浏览器 E2E 需要一个可用的 API 仓库 checkout。设置 `NOVEL_AGENT_API_ROOT` 指向后端仓库后，再运行 `pnpm run test:e2e`；不设置时 Playwright 只会启动前端，不会假装拥有后端服务。
 
-`openapi/novel-agent-v1.json` 是前端仓库使用的 API 契约基线。后端变更需更新该 artifact 并运行 `npm run generate:api`，CI 会校验 job operation 和派生类型。
+`openapi/novel-agent-v1.json` 是前端仓库使用的 API 契约基线。后端变更需更新该 artifact 并运行 `pnpm run generate:api`，CI 会校验 job operation 和派生类型。

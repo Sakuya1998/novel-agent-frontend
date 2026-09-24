@@ -38,7 +38,19 @@ function splitBriefList(value: string, limit: number): string[] {
     .slice(0, limit);
 }
 
-export function NovelSidebar({ novels, selectedId, isLoading, isStreaming, deletingId, serviceStatus = "checking", createOpen, onCreateOpenChange, onSelect, onCreate, onDelete }: Props) {
+export function NovelSidebar({
+  novels,
+  selectedId,
+  isLoading,
+  isStreaming,
+  deletingId,
+  serviceStatus = "checking",
+  createOpen,
+  onCreateOpenChange,
+  onSelect,
+  onCreate,
+  onDelete,
+}: Props) {
   const { workspace } = useWorkspace();
   const [resources, setResources] = useState<Record<string, Resource[]>>({});
   const [internalCreating, setInternalCreating] = useState(false);
@@ -57,7 +69,13 @@ export function NovelSidebar({ novels, selectedId, isLoading, isStreaming, delet
   const isCreating = createOpen ?? internalCreating;
   useEffect(() => {
     if (!workspace) return;
-    void Promise.all((["content-types", "styles", "creative-templates", "quality-policies"] as const).map(async (kind) => [kind, await listPublishedResources(workspace.id, kind)] as const)).then((entries) => setResources(Object.fromEntries(entries))).catch(() => undefined);
+    void Promise.all(
+      (["content-types", "styles", "creative-templates", "quality-policies"] as const).map(
+        async (kind) => [kind, await listPublishedResources(workspace.id, kind)] as const,
+      ),
+    )
+      .then((entries) => setResources(Object.fromEntries(entries)))
+      .catch(() => undefined);
   }, [workspace?.id]);
   const publishedStyles = resources.styles ?? [];
   const publishedTypes = resources["content-types"] ?? [];
@@ -65,15 +83,18 @@ export function NovelSidebar({ novels, selectedId, isLoading, isStreaming, delet
   const publishedPolicies = resources["quality-policies"] ?? [];
   const [templateId, setTemplateId] = useState("");
   const [policyId, setPolicyId] = useState("");
-  const [styleResourceId, setStyleResourceId] = useState("");
-  const [contentTypeResourceId, setContentTypeResourceId] = useState("");
+  const [styleResourceId] = useState("");
+  const [contentTypeResourceId] = useState("");
   function setIsCreating(open: boolean) {
     if (createOpen === undefined) setInternalCreating(open);
     onCreateOpenChange?.(open);
   }
   const { dialogRef, onBackdropMouseDown } = useDialogLifecycle<HTMLFormElement>(
     isCreating,
-    () => { setIsCreating(false); setCreateError(""); },
+    () => {
+      setIsCreating(false);
+      setCreateError("");
+    },
     isSubmitting,
   );
   const serviceLabels: Record<ServiceStatus, string> = {
@@ -143,65 +164,333 @@ export function NovelSidebar({ novels, selectedId, isLoading, isStreaming, delet
   return (
     <aside className="sidebar">
       <div className="brand-lockup">
-        <div className="brand-mark"><BookOpen size={18} /></div>
-        <div><strong>墨笔</strong><span>AI 小说工作台</span></div>
+        <div className="brand-mark">
+          <BookOpen size={18} />
+        </div>
+        <div>
+          <strong>墨笔</strong>
+          <span>AI 小说工作台</span>
+        </div>
       </div>
       <div className="sidebar-heading">
-        <div><span className="eyebrow">LIBRARY</span><h2>我的作品</h2></div>
-        <button className="icon-button" title="新建作品" aria-label="新建作品" onClick={() => { setCreateError(""); setIsCreating(true); }}><Plus size={17} /></button>
+        <div>
+          <span className="eyebrow">LIBRARY</span>
+          <h2>我的作品</h2>
+        </div>
+        <button
+          className="icon-button"
+          title="新建作品"
+          aria-label="新建作品"
+          onClick={() => {
+            setCreateError("");
+            setIsCreating(true);
+          }}
+        >
+          <Plus size={17} />
+        </button>
       </div>
       {isCreating && (
         <div className="new-novel-backdrop" onMouseDown={onBackdropMouseDown}>
-        <form ref={dialogRef} tabIndex={-1} className="new-novel-form" role="dialog" aria-modal="true" aria-labelledby="new-novel-title" onSubmit={submit}>
-          <div className="new-novel-header"><div><span className="eyebrow">NEW PROJECT</span><h2 id="new-novel-title">创建一部新作品</h2></div><button type="button" className="icon-button" title="关闭" aria-label="关闭" disabled={isSubmitting} onClick={() => { setIsCreating(false); setCreateError(""); }}><X size={17} /></button></div>
-          <div className="new-novel-grid">
-          <label>标题<input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="雾中剑" required /></label>
-          <label>类型<select value={genre} onChange={(event) => setGenre(event.target.value)}>{publishedTypes.length ? publishedTypes.map((item) => <option key={item.id} value={item.key}>{item.name}</option>) : <option>武侠</option>}</select></label>
-          <label>章节数<input type="number" min="1" max="50" value={totalChapters} onChange={(event) => setTotalChapters(Number(event.target.value))} /></label>
-          <label>叙事风格<select value={style} onChange={(event) => setStyle(event.target.value)}>{publishedStyles.length ? publishedStyles.map((item) => <option key={item.id} value={item.key}>{item.name}</option>) : <option value="jin_yong">金庸</option>}</select></label>
-          {publishedTemplates.length ? <label>创作模板<select value={templateId} onChange={(event) => setTemplateId(event.target.value)}><option value="">不使用模板</option>{publishedTemplates.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label> : null}
-          {publishedPolicies.length ? <label>质量策略<select value={policyId} onChange={(event) => setPolicyId(event.target.value)}><option value="">默认策略</option>{publishedPolicies.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label> : null}
-          <label className="new-novel-wide">一句话灵感<textarea value={inspiration} onChange={(event) => setInspiration(event.target.value)} placeholder="一个失忆的剑客在雾都寻找过去……" rows={3} required /></label>
-          </div>
-          <details className="creative-brief-fields">
-            <summary><SlidersHorizontal size={14} />创作约束</summary>
-            <div className="creative-brief-body">
-              <label>目标读者<input value={creativeBrief.target_audience} maxLength={200} onChange={(event) => updateBrief("target_audience", event.target.value)} required /></label>
-              <div className="brief-select-grid">
-                <label>内容分级<select value={creativeBrief.age_rating} onChange={(event) => updateBrief("age_rating", event.target.value as CreativeBrief["age_rating"])}>{Object.entries(AGE_RATING_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-                <label>叙事视角<select value={creativeBrief.point_of_view} onChange={(event) => updateBrief("point_of_view", event.target.value as CreativeBrief["point_of_view"])}>{Object.entries(POINT_OF_VIEW_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-                <label>叙事时态<select value={creativeBrief.narrative_tense} onChange={(event) => updateBrief("narrative_tense", event.target.value as CreativeBrief["narrative_tense"])}>{Object.entries(NARRATIVE_TENSE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-                <label>叙事距离<select value={creativeBrief.narrative_distance} onChange={(event) => updateBrief("narrative_distance", event.target.value as CreativeBrief["narrative_distance"])}>{Object.entries(NARRATIVE_DISTANCE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-                <label>结局基调<select value={creativeBrief.ending_tone} onChange={(event) => updateBrief("ending_tone", event.target.value as CreativeBrief["ending_tone"])}>{Object.entries(ENDING_TONE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+          <form
+            ref={dialogRef}
+            tabIndex={-1}
+            className="new-novel-form"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="new-novel-title"
+            onSubmit={submit}
+          >
+            <div className="new-novel-header">
+              <div>
+                <span className="eyebrow">NEW PROJECT</span>
+                <h2 id="new-novel-title">创建一部新作品</h2>
               </div>
-              <fieldset className="brief-intensity">
-                <legend>类型强度</legend>
-                {([["romance", "感情"], ["mystery", "悬疑"], ["action", "动作"], ["darkness", "黑暗"]] as const).map(([field, label]) => (
-                  <label className="brief-slider" key={field}>
-                    <span>{label}<output>{creativeBrief.intensity[field]}</output></span>
-                    <input aria-label={`${label}强度`} type="range" min="0" max="5" value={creativeBrief.intensity[field]} onChange={(event) => updateIntensity(field, Number(event.target.value))} />
-                  </label>
-                ))}
-              </fieldset>
-              <label>核心主题<input value={themes} maxLength={1600} onChange={(event) => setThemes(event.target.value)} placeholder="身份，记忆，选择" /></label>
-              <label>必须包含<input value={mustInclude} maxLength={2400} onChange={(event) => setMustInclude(event.target.value)} placeholder="关键意象或情节承诺" /></label>
-              <label>回避内容<input value={avoidContent} maxLength={2400} onChange={(event) => setAvoidContent(event.target.value)} placeholder="不希望出现的内容" /></label>
-              <label>补充说明<textarea value={creativeBrief.notes} maxLength={2000} onChange={(event) => updateBrief("notes", event.target.value)} rows={3} /></label>
+              <button
+                type="button"
+                className="icon-button"
+                title="关闭"
+                aria-label="关闭"
+                disabled={isSubmitting}
+                onClick={() => {
+                  setIsCreating(false);
+                  setCreateError("");
+                }}
+              >
+                <X size={17} />
+              </button>
             </div>
-          </details>
-          {createError && <p className="new-novel-error" role="alert" aria-live="assertive">{createError}</p>}
-          <div className="new-novel-footer"><label className="toggle-row"><input type="checkbox" checked={planningReviewEnabled} onChange={(event) => setPlanningReviewEnabled(event.target.checked)} /><span>正文生成前审阅蓝图与分镜</span></label><button className="primary-button" disabled={isSubmitting || isStreaming}><Sparkles size={15} />{isSubmitting ? "启动中" : "开始创作"}</button></div>
-        </form>
+            <div className="new-novel-grid">
+              <label>
+                标题
+                <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="雾中剑" required />
+              </label>
+              <label>
+                类型
+                <select value={genre} onChange={(event) => setGenre(event.target.value)}>
+                  {publishedTypes.length ? (
+                    publishedTypes.map((item) => (
+                      <option key={item.id} value={item.key}>
+                        {item.name}
+                      </option>
+                    ))
+                  ) : (
+                    <option>武侠</option>
+                  )}
+                </select>
+              </label>
+              <label>
+                章节数
+                <input
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={totalChapters}
+                  onChange={(event) => setTotalChapters(Number(event.target.value))}
+                />
+              </label>
+              <label>
+                叙事风格
+                <select value={style} onChange={(event) => setStyle(event.target.value)}>
+                  {publishedStyles.length ? (
+                    publishedStyles.map((item) => (
+                      <option key={item.id} value={item.key}>
+                        {item.name}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="jin_yong">金庸</option>
+                  )}
+                </select>
+              </label>
+              {publishedTemplates.length ? (
+                <label>
+                  创作模板
+                  <select value={templateId} onChange={(event) => setTemplateId(event.target.value)}>
+                    <option value="">不使用模板</option>
+                    {publishedTemplates.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+              {publishedPolicies.length ? (
+                <label>
+                  质量策略
+                  <select value={policyId} onChange={(event) => setPolicyId(event.target.value)}>
+                    <option value="">默认策略</option>
+                    {publishedPolicies.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+              <label className="new-novel-wide">
+                一句话灵感
+                <textarea
+                  value={inspiration}
+                  onChange={(event) => setInspiration(event.target.value)}
+                  placeholder="一个失忆的剑客在雾都寻找过去……"
+                  rows={3}
+                  required
+                />
+              </label>
+            </div>
+            <details className="creative-brief-fields">
+              <summary>
+                <SlidersHorizontal size={14} />
+                创作约束
+              </summary>
+              <div className="creative-brief-body">
+                <label>
+                  目标读者
+                  <input
+                    value={creativeBrief.target_audience}
+                    maxLength={200}
+                    onChange={(event) => updateBrief("target_audience", event.target.value)}
+                    required
+                  />
+                </label>
+                <div className="brief-select-grid">
+                  <label>
+                    内容分级
+                    <select
+                      value={creativeBrief.age_rating}
+                      onChange={(event) => updateBrief("age_rating", event.target.value as CreativeBrief["age_rating"])}
+                    >
+                      {Object.entries(AGE_RATING_LABELS).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    叙事视角
+                    <select
+                      value={creativeBrief.point_of_view}
+                      onChange={(event) =>
+                        updateBrief("point_of_view", event.target.value as CreativeBrief["point_of_view"])
+                      }
+                    >
+                      {Object.entries(POINT_OF_VIEW_LABELS).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    叙事时态
+                    <select
+                      value={creativeBrief.narrative_tense}
+                      onChange={(event) =>
+                        updateBrief("narrative_tense", event.target.value as CreativeBrief["narrative_tense"])
+                      }
+                    >
+                      {Object.entries(NARRATIVE_TENSE_LABELS).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    叙事距离
+                    <select
+                      value={creativeBrief.narrative_distance}
+                      onChange={(event) =>
+                        updateBrief("narrative_distance", event.target.value as CreativeBrief["narrative_distance"])
+                      }
+                    >
+                      {Object.entries(NARRATIVE_DISTANCE_LABELS).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    结局基调
+                    <select
+                      value={creativeBrief.ending_tone}
+                      onChange={(event) =>
+                        updateBrief("ending_tone", event.target.value as CreativeBrief["ending_tone"])
+                      }
+                    >
+                      {Object.entries(ENDING_TONE_LABELS).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <fieldset className="brief-intensity">
+                  <legend>类型强度</legend>
+                  {(
+                    [
+                      ["romance", "感情"],
+                      ["mystery", "悬疑"],
+                      ["action", "动作"],
+                      ["darkness", "黑暗"],
+                    ] as const
+                  ).map(([field, label]) => (
+                    <label className="brief-slider" key={field}>
+                      <span>
+                        {label}
+                        <output>{creativeBrief.intensity[field]}</output>
+                      </span>
+                      <input
+                        aria-label={`${label}强度`}
+                        type="range"
+                        min="0"
+                        max="5"
+                        value={creativeBrief.intensity[field]}
+                        onChange={(event) => updateIntensity(field, Number(event.target.value))}
+                      />
+                    </label>
+                  ))}
+                </fieldset>
+                <label>
+                  核心主题
+                  <input
+                    value={themes}
+                    maxLength={1600}
+                    onChange={(event) => setThemes(event.target.value)}
+                    placeholder="身份，记忆，选择"
+                  />
+                </label>
+                <label>
+                  必须包含
+                  <input
+                    value={mustInclude}
+                    maxLength={2400}
+                    onChange={(event) => setMustInclude(event.target.value)}
+                    placeholder="关键意象或情节承诺"
+                  />
+                </label>
+                <label>
+                  回避内容
+                  <input
+                    value={avoidContent}
+                    maxLength={2400}
+                    onChange={(event) => setAvoidContent(event.target.value)}
+                    placeholder="不希望出现的内容"
+                  />
+                </label>
+                <label>
+                  补充说明
+                  <textarea
+                    value={creativeBrief.notes}
+                    maxLength={2000}
+                    onChange={(event) => updateBrief("notes", event.target.value)}
+                    rows={3}
+                  />
+                </label>
+              </div>
+            </details>
+            {createError && (
+              <p className="new-novel-error" role="alert" aria-live="assertive">
+                {createError}
+              </p>
+            )}
+            <div className="new-novel-footer">
+              <label className="toggle-row">
+                <input
+                  type="checkbox"
+                  checked={planningReviewEnabled}
+                  onChange={(event) => setPlanningReviewEnabled(event.target.checked)}
+                />
+                <span>正文生成前审阅蓝图与分镜</span>
+              </label>
+              <button className="primary-button" disabled={isSubmitting || isStreaming}>
+                <Sparkles size={15} />
+                {isSubmitting ? "启动中" : "开始创作"}
+              </button>
+            </div>
+          </form>
         </div>
       )}
       <div className={`novel-list ${novels.length ? "has-items" : ""}`} aria-label="作品列表">
-        {isLoading && <div className="muted-row"><LoaderCircle className="spin" size={15} />加载作品</div>}
-        {!isLoading && novels.length === 0 && <div className="empty-sidebar">还没有作品<br /><span>从右上角开始第一部小说</span></div>}
+        {isLoading && (
+          <div className="muted-row">
+            <LoaderCircle className="spin" size={15} />
+            加载作品
+          </div>
+        )}
+        {!isLoading && novels.length === 0 && (
+          <div className="empty-sidebar">
+            还没有作品
+            <br />
+            <span>从右上角开始第一部小说</span>
+          </div>
+        )}
         {novels.map((item) => (
-          <div
-            className={`novel-item ${item.id === selectedId ? "active" : ""}`}
-            key={item.id}
-          >
+          <div className={`novel-item ${item.id === selectedId ? "active" : ""}`} key={item.id}>
             <button
               type="button"
               className="novel-select-button"
@@ -209,7 +498,13 @@ export function NovelSidebar({ novels, selectedId, isLoading, isStreaming, delet
               aria-current={item.id === selectedId ? "page" : undefined}
               onClick={() => onSelect(item.id)}
             >
-              <span className="novel-dot" /><span className="novel-item-copy"><strong>{item.title}</strong><small>{item.genre || "未分类"} · {item.total_chapters} 章</small></span>
+              <span className="novel-dot" />
+              <span className="novel-item-copy">
+                <strong>{item.title}</strong>
+                <small>
+                  {item.genre || "未分类"} · {item.total_chapters} 章
+                </small>
+              </span>
             </button>
             <button
               type="button"
@@ -224,7 +519,11 @@ export function NovelSidebar({ novels, selectedId, isLoading, isStreaming, delet
           </div>
         ))}
       </div>
-      <div className="sidebar-footer"><span className={`status-dot ${serviceStatus}`} />{serviceLabels[serviceStatus]}<span className="version">v2.0</span></div>
+      <div className="sidebar-footer">
+        <span className={`status-dot ${serviceStatus}`} />
+        {serviceLabels[serviceStatus]}
+        <span className="version">v2.0</span>
+      </div>
     </aside>
   );
 }

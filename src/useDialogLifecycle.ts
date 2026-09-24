@@ -9,11 +9,7 @@ const FOCUSABLE_SELECTOR = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(",");
 
-export function useDialogLifecycle<T extends HTMLElement>(
-  open: boolean,
-  onClose: () => void,
-  closeDisabled = false,
-) {
+export function useDialogLifecycle<T extends HTMLElement>(open: boolean, onClose: () => void, closeDisabled = false) {
   const dialogRef = useRef<T>(null);
   const onCloseRef = useRef(onClose);
   const closeDisabledRef = useRef(closeDisabled);
@@ -22,9 +18,7 @@ export function useDialogLifecycle<T extends HTMLElement>(
 
   useEffect(() => {
     if (!open) return;
-    const previousFocus = document.activeElement instanceof HTMLElement
-      ? document.activeElement
-      : null;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
@@ -39,8 +33,9 @@ export function useDialogLifecycle<T extends HTMLElement>(
       }
       if (event.key !== "Tab") return;
 
-      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
-        .filter((element) => element.getClientRects().length > 0 || element === document.activeElement);
+      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+        (element) => element.getClientRects().length > 0 || element === document.activeElement,
+      );
       if (focusable.length === 0) {
         event.preventDefault();
         dialog.focus();

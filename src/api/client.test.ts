@@ -5,11 +5,16 @@ describe("typed API client", () => {
   afterEach(() => vi.restoreAllMocks());
 
   it("builds a versioned job events request from generated operation types", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({
-      job: { id: "job-1" },
-      events: [],
-      next_after_sequence: 4,
-    }), { status: 200, headers: { "Content-Type": "application/json" } }));
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          job: { id: "job-1" },
+          events: [],
+          next_after_sequence: 4,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
 
     const response = await apiOperation("get_run_job_events_api_jobs__job_id__events_getV1", {
       parameters: { path: { job_id: "job/1" }, query: { after_sequence: 4, limit: 10 } },
@@ -23,10 +28,12 @@ describe("typed API client", () => {
   });
 
   it("forwards generated idempotency header for job creation", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ id: "job-1" }), {
-      status: 202,
-      headers: { "Content-Type": "application/json" },
-    }));
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ id: "job-1" }), {
+        status: 202,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
 
     await apiOperation("create_run_job_api_novels__novel_id__jobs_run_postV1", {
       parameters: { path: { novel_id: "novel-1" }, header: { "Idempotency-Key": "request-1" } },

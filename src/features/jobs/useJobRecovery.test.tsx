@@ -6,7 +6,18 @@ const getRunJobEvents = vi.hoisted(() => vi.fn());
 vi.mock("../../api", () => ({ getRunJobEvents }));
 import { useJobRecovery } from "./useJobRecovery";
 
-const job: RunJob = { id: "job-1", novel_id: "novel-1", action: "run", status: "running", request: {}, current_node: "writer", error: "", cancel_requested: false, created_at: "", updated_at: "" };
+const job: RunJob = {
+  id: "job-1",
+  novel_id: "novel-1",
+  action: "run",
+  status: "running",
+  request: {},
+  current_node: "writer",
+  error: "",
+  cancel_requested: false,
+  created_at: "",
+  updated_at: "",
+};
 
 describe("useJobRecovery", () => {
   it("recovers an active persisted job on mount", async () => {

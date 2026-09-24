@@ -27,31 +27,50 @@ export function EmptyWorkspace({ serviceStatus, onCreate, onImport, onSettings }
           <p>从新的创作蓝图开始，或继续已有的作品归档。</p>
         </div>
         <button className="primary-button" type="button" onClick={onCreate}>
-          <Plus size={16} />新建作品
+          <Plus size={16} />
+          新建作品
         </button>
       </header>
 
       <div className="empty-workspace-actions" aria-label="作品库操作">
         <button type="button" onClick={onCreate}>
-          <span className="empty-action-icon"><Plus size={18} /></span>
-          <span><strong>新建作品</strong><small>创建标题、类型与创作约束</small></span>
+          <span className="empty-action-icon">
+            <Plus size={18} />
+          </span>
+          <span>
+            <strong>新建作品</strong>
+            <small>创建标题、类型与创作约束</small>
+          </span>
           <ArrowUpRight size={16} />
         </button>
         <button type="button" onClick={onImport}>
-          <span className="empty-action-icon"><FileUp size={18} /></span>
-          <span><strong>导入作品</strong><small>从文稿或备份恢复工作区</small></span>
+          <span className="empty-action-icon">
+            <FileUp size={18} />
+          </span>
+          <span>
+            <strong>导入作品</strong>
+            <small>从文稿或备份恢复工作区</small>
+          </span>
           <ArrowUpRight size={16} />
         </button>
         <button type="button" onClick={onSettings}>
-          <span className="empty-action-icon"><Settings2 size={18} /></span>
-          <span><strong>模型设置</strong><small>配置创作、分析与向量模型</small></span>
+          <span className="empty-action-icon">
+            <Settings2 size={18} />
+          </span>
+          <span>
+            <strong>模型设置</strong>
+            <small>配置创作、分析与向量模型</small>
+          </span>
           <ArrowUpRight size={16} />
         </button>
       </div>
 
       <footer className={`empty-workspace-status ${serviceStatus}`}>
         <span className={`status-dot ${serviceStatus}`} />
-        <div><strong>{status.label}</strong><small>{status.detail}</small></div>
+        <div>
+          <strong>{status.label}</strong>
+          <small>{status.detail}</small>
+        </div>
       </footer>
     </section>
   );

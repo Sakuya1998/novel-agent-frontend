@@ -33,7 +33,16 @@ const history: MemoryQualityHistory = {
 describe("MemoryQualityDialog", () => {
   it("shows retrieval metrics and runs rebuild", async () => {
     const onRebuild = vi.fn().mockResolvedValue({});
-    render(<MemoryQualityDialog open history={history} onClose={vi.fn()} onRefresh={vi.fn().mockResolvedValue(history)} onEvaluate={vi.fn().mockResolvedValue({})} onRebuild={onRebuild} />);
+    render(
+      <MemoryQualityDialog
+        open
+        history={history}
+        onClose={vi.fn()}
+        onRefresh={vi.fn().mockResolvedValue(history)}
+        onEvaluate={vi.fn().mockResolvedValue({})}
+        onRebuild={onRebuild}
+      />,
+    );
     expect(screen.getByRole("dialog", { name: "长期记忆质量" })).toHaveTextContent("90.0%");
     expect(screen.getByRole("dialog", { name: "长期记忆质量" })).toHaveTextContent("0.80");
     await userEvent.click(screen.getByRole("button", { name: "重建并评测索引" }));
@@ -41,7 +50,16 @@ describe("MemoryQualityDialog", () => {
   });
 
   it("renders inside the shared modal backdrop", () => {
-    render(<MemoryQualityDialog open history={history} onClose={vi.fn()} onRefresh={vi.fn().mockResolvedValue(history)} onEvaluate={vi.fn().mockResolvedValue({})} onRebuild={vi.fn().mockResolvedValue({})} />);
+    render(
+      <MemoryQualityDialog
+        open
+        history={history}
+        onClose={vi.fn()}
+        onRefresh={vi.fn().mockResolvedValue(history)}
+        onEvaluate={vi.fn().mockResolvedValue({})}
+        onRebuild={vi.fn().mockResolvedValue({})}
+      />,
+    );
 
     expect(screen.getByRole("dialog", { name: "长期记忆质量" }).parentElement).toHaveClass("model-settings-backdrop");
   });

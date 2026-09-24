@@ -97,23 +97,63 @@ export function MonitoringDialog({ open, onClose }: Props) {
 
   return (
     <div className="model-settings-backdrop" onMouseDown={onBackdropMouseDown}>
-      <section ref={dialogRef} tabIndex={-1} className="model-settings-dialog monitoring-dialog" role="dialog" aria-modal="true" aria-labelledby="monitoring-title">
+      <section
+        ref={dialogRef}
+        tabIndex={-1}
+        className="model-settings-dialog monitoring-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="monitoring-title"
+      >
         <header className="model-settings-header">
-          <div><span className="eyebrow">OPERATIONS</span><h2 id="monitoring-title">运行状态与审计</h2></div>
+          <div>
+            <span className="eyebrow">OPERATIONS</span>
+            <h2 id="monitoring-title">运行状态与审计</h2>
+          </div>
           <div className="model-settings-header-actions">
-            <button type="button" className="dialog-close-button" aria-label="刷新运行状态" title="刷新" disabled={loading} onClick={() => void load()}><RefreshCw className={loading ? "spin" : ""} size={17} /></button>
-            <button type="button" className="dialog-close-button" aria-label="关闭运行状态" title="关闭" disabled={loading} onClick={onClose}><X size={18} /></button>
+            <button
+              type="button"
+              className="dialog-close-button"
+              aria-label="刷新运行状态"
+              title="刷新"
+              disabled={loading}
+              onClick={() => void load()}
+            >
+              <RefreshCw className={loading ? "spin" : ""} size={17} />
+            </button>
+            <button
+              type="button"
+              className="dialog-close-button"
+              aria-label="关闭运行状态"
+              title="关闭"
+              disabled={loading}
+              onClick={onClose}
+            >
+              <X size={18} />
+            </button>
           </div>
         </header>
-        {error && <p className="monitoring-error"><CircleAlert size={14} />{error}</p>}
+        {error && (
+          <p className="monitoring-error">
+            <CircleAlert size={14} />
+            {error}
+          </p>
+        )}
 
         <div className="monitoring-section">
-          <div className="monitoring-heading"><ShieldCheck size={15} /><strong>依赖就绪</strong><span className={readiness?.status === "ready" ? "passed" : "attention"}>{readinessLabel}</span></div>
+          <div className="monitoring-heading">
+            <ShieldCheck size={15} />
+            <strong>依赖就绪</strong>
+            <span className={readiness?.status === "ready" ? "passed" : "attention"}>{readinessLabel}</span>
+          </div>
           <div className="monitoring-checks">
             {Object.entries(readiness?.checks ?? {}).map(([name, check]) => (
               <div key={name}>
                 <span>{CHECK_LABELS[name] ?? name}</span>
-                <strong className={isHealthy(check.status) ? "ok" : "bad"}>{isHealthy(check.status) ? <CheckCircle2 size={13} /> : <CircleAlert size={13} />}{STATUS_LABELS[check.status] ?? check.status}</strong>
+                <strong className={isHealthy(check.status) ? "ok" : "bad"}>
+                  {isHealthy(check.status) ? <CheckCircle2 size={13} /> : <CircleAlert size={13} />}
+                  {STATUS_LABELS[check.status] ?? check.status}
+                </strong>
               </div>
             ))}
             {!readiness && <div className="monitoring-placeholder">正在检查关键依赖...</div>}
@@ -121,20 +161,56 @@ export function MonitoringDialog({ open, onClose }: Props) {
         </div>
 
         <div className="monitoring-section">
-          <div className="monitoring-heading"><Activity size={15} /><strong>运行聚合</strong><small>当前工作区</small></div>
+          <div className="monitoring-heading">
+            <Activity size={15} />
+            <strong>运行聚合</strong>
+            <small>当前工作区</small>
+          </div>
           <div className="monitoring-summary">
-            <div><span>创作任务</span><strong>{runCount ?? "—"}</strong><small>{summary ? `${summary.run_jobs.failed ?? 0} 失败` : "等待数据"}</small></div>
-            <div><span>传输任务</span><strong>{transferCount ?? "—"}</strong><small>{summary ? `${summary.transfer_jobs.failed ?? 0} 失败` : "等待数据"}</small></div>
-            <div><span>模型调用</span><strong>{summary?.model_calls.total ?? "—"}</strong><small>{summary ? `${summary.model_calls.failed ?? 0} 失败` : "等待数据"}</small></div>
-            <div><span>模型耗时</span><strong>{summary ? `${Math.round(summary.model_calls.duration_ms / 1000)}s` : "—"}</strong><small>{summary ? `${summary.model_calls.input_tokens + summary.model_calls.output_tokens} tokens` : "等待数据"}</small></div>
+            <div>
+              <span>创作任务</span>
+              <strong>{runCount ?? "—"}</strong>
+              <small>{summary ? `${summary.run_jobs.failed ?? 0} 失败` : "等待数据"}</small>
+            </div>
+            <div>
+              <span>传输任务</span>
+              <strong>{transferCount ?? "—"}</strong>
+              <small>{summary ? `${summary.transfer_jobs.failed ?? 0} 失败` : "等待数据"}</small>
+            </div>
+            <div>
+              <span>模型调用</span>
+              <strong>{summary?.model_calls.total ?? "—"}</strong>
+              <small>{summary ? `${summary.model_calls.failed ?? 0} 失败` : "等待数据"}</small>
+            </div>
+            <div>
+              <span>模型耗时</span>
+              <strong>{summary ? `${Math.round(summary.model_calls.duration_ms / 1000)}s` : "—"}</strong>
+              <small>
+                {summary
+                  ? `${summary.model_calls.input_tokens + summary.model_calls.output_tokens} tokens`
+                  : "等待数据"}
+              </small>
+            </div>
           </div>
         </div>
 
         <div className="monitoring-section monitoring-log-section">
-          <div className="monitoring-heading"><Activity size={15} /><strong>最近操作</strong><small>{loaded ? `${logs.length} 条` : "读取中"}</small></div>
+          <div className="monitoring-heading">
+            <Activity size={15} />
+            <strong>最近操作</strong>
+            <small>{loaded ? `${logs.length} 条` : "读取中"}</small>
+          </div>
           <div className="monitoring-logs">
-            {logs.map((log) => <div className="monitoring-log" key={log.id}><strong>{logTitle(log)}</strong><time>{new Date(log.created_at).toLocaleString("zh-CN", { hour12: false })}</time><small>{logContext(log)}</small></div>)}
-            {logs.length === 0 && <div className="monitoring-empty">{loading || !loaded ? "正在读取审计记录..." : "尚无审计记录"}</div>}
+            {logs.map((log) => (
+              <div className="monitoring-log" key={log.id}>
+                <strong>{logTitle(log)}</strong>
+                <time>{new Date(log.created_at).toLocaleString("zh-CN", { hour12: false })}</time>
+                <small>{logContext(log)}</small>
+              </div>
+            ))}
+            {logs.length === 0 && (
+              <div className="monitoring-empty">{loading || !loaded ? "正在读取审计记录..." : "尚无审计记录"}</div>
+            )}
           </div>
         </div>
       </section>

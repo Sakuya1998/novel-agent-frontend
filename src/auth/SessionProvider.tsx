@@ -35,26 +35,31 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
 
-  const value = useMemo<SessionContextValue>(() => ({
-    ...state,
-    refresh,
-    login: async (identifier, password) => {
-      const session = await loginAuth(identifier, password);
-      setState({ status: "ready", enabled: true, user: session.user, error: "" });
-      return session;
-    },
-    register: async (payload) => {
-      const session = await registerAuth(payload);
-      setState({ status: "ready", enabled: true, user: session.user, error: "" });
-      return session;
-    },
-    logout: async () => {
-      await logoutAuth();
-      setState((current) => ({ ...current, status: "ready", user: null, error: "" }));
-    },
-  }), [refresh, state]);
+  const value = useMemo<SessionContextValue>(
+    () => ({
+      ...state,
+      refresh,
+      login: async (identifier, password) => {
+        const session = await loginAuth(identifier, password);
+        setState({ status: "ready", enabled: true, user: session.user, error: "" });
+        return session;
+      },
+      register: async (payload) => {
+        const session = await registerAuth(payload);
+        setState({ status: "ready", enabled: true, user: session.user, error: "" });
+        return session;
+      },
+      logout: async () => {
+        await logoutAuth();
+        setState((current) => ({ ...current, status: "ready", user: null, error: "" }));
+      },
+    }),
+    [refresh, state],
+  );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
@@ -70,34 +75,47 @@ export function useSession(): SessionContextValue {
   useEffect(() => {
     if (value) return;
     let active = true;
-    void getAuthStatus().then((status) => {
-      if (active) setFallback({ status: "ready", enabled: status.enabled, user: status.user, error: "" });
-    }).catch((reason) => {
-      if (active) setFallback({ status: "error", enabled: false, user: null, error: reason instanceof Error ? reason.message : "无法读取登录状态" });
-    });
-    return () => { active = false; };
+    void getAuthStatus()
+      .then((status) => {
+        if (active) setFallback({ status: "ready", enabled: status.enabled, user: status.user, error: "" });
+      })
+      .catch((reason) => {
+        if (active)
+          setFallback({
+            status: "error",
+            enabled: false,
+            user: null,
+            error: reason instanceof Error ? reason.message : "无法读取登录状态",
+          });
+      });
+    return () => {
+      active = false;
+    };
   }, [value]);
-  const fallbackValue = useMemo<SessionContextValue>(() => ({
-    ...fallback,
-    refresh: async () => {
-      const status = await getAuthStatus();
-      setFallback({ status: "ready", enabled: status.enabled, user: status.user, error: "" });
-      return status;
-    },
-    login: async (identifier, password) => {
-      const session = await loginAuth(identifier, password);
-      setFallback({ status: "ready", enabled: true, user: session.user, error: "" });
-      return session;
-    },
-    register: async (payload) => {
-      const session = await registerAuth(payload);
-      setFallback({ status: "ready", enabled: true, user: session.user, error: "" });
-      return session;
-    },
-    logout: async () => {
-      await logoutAuth();
-      setFallback((current) => ({ ...current, status: "ready", user: null, error: "" }));
-    },
-  }), [fallback]);
+  const fallbackValue = useMemo<SessionContextValue>(
+    () => ({
+      ...fallback,
+      refresh: async () => {
+        const status = await getAuthStatus();
+        setFallback({ status: "ready", enabled: status.enabled, user: status.user, error: "" });
+        return status;
+      },
+      login: async (identifier, password) => {
+        const session = await loginAuth(identifier, password);
+        setFallback({ status: "ready", enabled: true, user: session.user, error: "" });
+        return session;
+      },
+      register: async (payload) => {
+        const session = await registerAuth(payload);
+        setFallback({ status: "ready", enabled: true, user: session.user, error: "" });
+        return session;
+      },
+      logout: async () => {
+        await logoutAuth();
+        setFallback((current) => ({ ...current, status: "ready", user: null, error: "" }));
+      },
+    }),
+    [fallback],
+  );
   return value ?? fallbackValue;
 }

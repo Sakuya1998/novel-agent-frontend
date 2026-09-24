@@ -2,22 +2,32 @@ import "@testing-library/jest-dom/vitest";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ChapterCandidate, ChapterEvaluation, ChapterVersion, ConflictExplanation, Draft, ReviewSubmission, ScenePlanItem } from "../types";
+import type {
+  ChapterCandidate,
+  ChapterEvaluation,
+  ChapterVersion,
+  ConflictExplanation,
+  Draft,
+  ReviewSubmission,
+  ScenePlanItem,
+} from "../types";
 import { ReviewWorkspace } from "./ReviewWorkspace";
 import { useReviewWorkflow } from "../useReviewWorkflow";
 
 afterEach(cleanup);
 
-const scenePlan: ScenePlanItem[] = [{
-  scene_number: 2,
-  goal: "摆脱追兵",
-  conflict: "道路封锁",
-  turn: "进入暗巷",
-  location: "长街",
-  characters: ["林寒"],
-  emotion: "急迫",
-  estimated_words: 600,
-}];
+const scenePlan: ScenePlanItem[] = [
+  {
+    scene_number: 2,
+    goal: "摆脱追兵",
+    conflict: "道路封锁",
+    turn: "进入暗巷",
+    location: "长街",
+    characters: ["林寒"],
+    emotion: "急迫",
+    estimated_words: 600,
+  },
+];
 
 const draft: Draft = {
   chapter_number: 2,
@@ -46,7 +56,15 @@ const candidate: ChapterCandidate = {
   created_at: "2026-08-17",
 };
 
-const version: ChapterVersion = { id: 1, chapter_number: 2, version_number: 1, source: "initial", word_count: 10, preview: "初稿", created_at: "2026-08-17" };
+const version: ChapterVersion = {
+  id: 1,
+  chapter_number: 2,
+  version_number: 1,
+  source: "initial",
+  word_count: 10,
+  preview: "初稿",
+  created_at: "2026-08-17",
+};
 const conflict: ConflictExplanation = {
   conflict_id: "conflict-1",
   type: "timeline",
@@ -126,10 +144,18 @@ describe("ReviewWorkspace", () => {
 
   it("keeps all conflicting commands locked across tab switches during candidate creation", async () => {
     let resolve!: () => void;
-    const pending = new Promise<void>((done) => { resolve = done; });
+    const pending = new Promise<void>((done) => {
+      resolve = done;
+    });
     const onGenerateCandidates = vi.fn().mockReturnValue(pending);
     const onApplyCanon = vi.fn().mockResolvedValue(undefined);
-    const { onSubmit } = renderWorkspace({ candidates: [candidate], versions: [version], conflicts: [conflict], onGenerateCandidates, onApplyCanon });
+    const { onSubmit } = renderWorkspace({
+      candidates: [candidate],
+      versions: [version],
+      conflicts: [conflict],
+      onGenerateCandidates,
+      onApplyCanon,
+    });
     await userEvent.type(screen.getByRole("textbox", { name: "整章修改意见" }), "Revise");
     await userEvent.click(screen.getByRole("tab", { name: "候选稿" }));
     await userEvent.click(screen.getByRole("button", { name: "生成候选稿" }));
@@ -146,7 +172,10 @@ describe("ReviewWorkspace", () => {
     await userEvent.click(screen.getByRole("tab", { name: "候选稿" }));
     expect(screen.getByRole("button", { name: "生成候选稿" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "采用此稿" })).toBeDisabled();
-    await act(async () => { resolve(); await pending; });
+    await act(async () => {
+      resolve();
+      await pending;
+    });
     await userEvent.click(screen.getByRole("tab", { name: "决定" }));
     expect(screen.getByRole("button", { name: "通过定稿" })).toBeEnabled();
     expect(screen.getByRole("textbox", { name: "整章修改意见" })).toHaveValue("Revise");
@@ -155,9 +184,15 @@ describe("ReviewWorkspace", () => {
 
   it("ignores a replacement completion from the previous chapter without stealing its focus or feedback", async () => {
     let resolve!: () => void;
-    const pending = new Promise<void>((done) => { resolve = done; });
+    const pending = new Promise<void>((done) => {
+      resolve = done;
+    });
     const onFocusReader = vi.fn();
-    const { props, view } = renderWorkspace({ candidates: [candidate], onSubmit: vi.fn().mockReturnValue(pending), onFocusReader });
+    const { props, view } = renderWorkspace({
+      candidates: [candidate],
+      onSubmit: vi.fn().mockReturnValue(pending),
+      onFocusReader,
+    });
     await userEvent.click(screen.getByRole("tab", { name: "候选稿" }));
     await userEvent.click(screen.getByRole("button", { name: "采用此稿" }));
     view.rerender(<ReviewHarness {...props} draft={{ ...draft, chapter_number: 3 }} />);
@@ -165,7 +200,10 @@ describe("ReviewWorkspace", () => {
     await userEvent.type(screen.getByRole("textbox", { name: "第 2 场修改意见" }), "New chapter notes");
     await userEvent.click(screen.getByRole("tab", { name: "候选稿" }));
     onFocusReader.mockClear();
-    await act(async () => { resolve(); await pending; });
+    await act(async () => {
+      resolve();
+      await pending;
+    });
     expect(screen.getByRole("tabpanel", { name: "候选稿" })).toBeVisible();
     expect(onFocusReader).not.toHaveBeenCalled();
     await userEvent.click(screen.getByRole("tab", { name: "决定" }));
@@ -176,7 +214,17 @@ describe("ReviewWorkspace", () => {
     renderWorkspace({
       issues: [{ type: "consistency", description: "时间线冲突", severity: "high" }],
       candidates: [],
-      versions: [{ id: 1, chapter_number: 2, version_number: 1, source: "initial", word_count: 10, preview: "初稿", created_at: "2026-08-17" }],
+      versions: [
+        {
+          id: 1,
+          chapter_number: 2,
+          version_number: 1,
+          source: "initial",
+          word_count: 10,
+          preview: "初稿",
+          created_at: "2026-08-17",
+        },
+      ],
     });
 
     expect(screen.getByRole("textbox", { name: "整章修改意见" })).toBeVisible();
@@ -230,7 +278,13 @@ describe("ReviewWorkspace", () => {
   it("preserves conflict evidence, repair actions, and quality gate in the issues tab", async () => {
     const { onSubmit } = renderWorkspace({
       conflicts: [conflict],
-      qualityReport: { overall_score: 68, threshold: 70, passed: false, status: "escalated", findings: [{ dimension: "pacing", score: 55, message: "场景推进偏慢" }] },
+      qualityReport: {
+        overall_score: 68,
+        threshold: 70,
+        passed: false,
+        status: "escalated",
+        findings: [{ dimension: "pacing", score: 55, message: "场景推进偏慢" }],
+      },
     });
 
     await userEvent.click(screen.getByRole("tab", { name: /问题/ }));

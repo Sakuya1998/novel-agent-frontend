@@ -51,7 +51,10 @@ export function clearStoredAuth(): void {
 function csrfToken(): string {
   if (typeof document === "undefined") return "";
   const prefix = `${CSRF_COOKIE_NAME}=`;
-  const match = document.cookie.split(";").map((item) => item.trim()).find((item) => item.startsWith(prefix));
+  const match = document.cookie
+    .split(";")
+    .map((item) => item.trim())
+    .find((item) => item.startsWith(prefix));
   if (!match) return "";
   try {
     return decodeURIComponent(match.slice(prefix.length));
@@ -61,22 +64,32 @@ function csrfToken(): string {
 }
 
 function responseError(body: unknown, status: number): string {
-  if (body && typeof body === "object" && "message" in body && typeof (body as { message?: unknown }).message === "string") {
+  if (
+    body &&
+    typeof body === "object" &&
+    "message" in body &&
+    typeof (body as { message?: unknown }).message === "string"
+  ) {
     return (body as { message: string }).message;
   }
   if (!body || typeof body !== "object" || !("detail" in body)) return `请求失败 (${status})`;
   const detail = (body as { detail?: unknown }).detail;
   if (typeof detail === "string") return detail;
   if (Array.isArray(detail)) {
-    const messages = detail.map((item) => {
-      if (!item || typeof item !== "object") return String(item);
-      const issue = item as { loc?: unknown; msg?: unknown };
-      const location = Array.isArray(issue.loc)
-        ? issue.loc.filter((part) => part !== "body").map(String).join(".")
-        : "";
-      const message = typeof issue.msg === "string" ? issue.msg : "请求参数无效";
-      return location ? `${location}: ${message}` : message;
-    }).filter(Boolean);
+    const messages = detail
+      .map((item) => {
+        if (!item || typeof item !== "object") return String(item);
+        const issue = item as { loc?: unknown; msg?: unknown };
+        const location = Array.isArray(issue.loc)
+          ? issue.loc
+              .filter((part) => part !== "body")
+              .map(String)
+              .join(".")
+          : "";
+        const message = typeof issue.msg === "string" ? issue.msg : "请求参数无效";
+        return location ? `${location}: ${message}` : message;
+      })
+      .filter(Boolean);
     if (messages.length) return messages.join("；");
   }
   return `请求失败 (${status})`;
@@ -125,7 +138,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error(responseError(body, response.status));
   }
   try {
-    return await response.json() as T;
+    return (await response.json()) as T;
   } catch (reason) {
     throw new Error("后端返回了无法解析的数据", { cause: reason });
   }
@@ -152,7 +165,7 @@ export async function exportNovel(
     throw new Error(responseError(body, response.status));
   }
   if (response.status === 202) {
-    const payload = await response.json() as { job: TransferJob };
+    const payload = (await response.json()) as { job: TransferJob };
     const completed = await waitForTransfer(payload.job.id);
     const download = await fetchApi(`${API_BASE}/api/v1/transfers/${encodeURIComponent(completed.id)}/download`, {
       signal: requestSignal(),
@@ -252,11 +265,12 @@ export async function getReadiness(): Promise<ReadinessReport> {
   const response = await fetchApi(`${API_BASE}/readyz`, { signal: requestSignal(undefined, READINESS_TIMEOUT_MS) });
   const body = await response.json().catch(() => ({}));
   const validReport = Boolean(
-    body && typeof body === "object"
-    && "status" in body
-    && ((body as { status?: unknown }).status === "ready" || (body as { status?: unknown }).status === "not_ready")
-    && "checks" in body
-    && typeof (body as { checks?: unknown }).checks === "object",
+    body &&
+    typeof body === "object" &&
+    "status" in body &&
+    ((body as { status?: unknown }).status === "ready" || (body as { status?: unknown }).status === "not_ready") &&
+    "checks" in body &&
+    typeof (body as { checks?: unknown }).checks === "object",
   );
   if ((response.ok || response.status === 503) && validReport) return body as ReadinessReport;
   if (response.ok || response.status === 503) throw new Error("就绪检查返回了无效数据");
@@ -276,15 +290,11 @@ export function getMonitoringSummary(): Promise<MonitoringSummary> {
 export function listModelTraces(id: string, limit = 100, agent = ""): Promise<ModelTrace[]> {
   const query = new URLSearchParams({ limit: String(limit) });
   if (agent.trim()) query.set("agent", agent.trim());
-  return request<ModelTrace[]>(
-    `/api/v1/novels/${encodeURIComponent(id)}/traces?${query.toString()}`,
-  );
+  return request<ModelTrace[]>(`/api/v1/novels/${encodeURIComponent(id)}/traces?${query.toString()}`);
 }
 
 export function listCreativeBriefVersions(id: string): Promise<CreativeBriefVersion[]> {
-  return request<CreativeBriefVersion[]>(
-    `/api/v1/novels/${encodeURIComponent(id)}/creative-brief/versions`,
-  );
+  return request<CreativeBriefVersion[]>(`/api/v1/novels/${encodeURIComponent(id)}/creative-brief/versions`);
 }
 
 export function updateCreativeBrief(
@@ -292,11 +302,13 @@ export function updateCreativeBrief(
   creativeBrief: CreativeBrief,
   expectedVersion: number | undefined,
   changeSummary: string,
-): Promise<Novel & {
-  changed: boolean;
-  stale_candidate_count: number;
-  requires_revalidation: boolean;
-}> {
+): Promise<
+  Novel & {
+    changed: boolean;
+    stale_candidate_count: number;
+    requires_revalidation: boolean;
+  }
+> {
   return request(`/api/v1/novels/${encodeURIComponent(id)}/creative-brief`, {
     method: "PUT",
     body: JSON.stringify({
@@ -315,7 +327,10 @@ export function getNovelCanon(id: string): Promise<CanonDetail> {
   return request<CanonDetail>(`/api/v1/novels/${encodeURIComponent(id)}/canon`);
 }
 
-export function getNovelConflicts(id: string, chapterNumber?: number): Promise<{ chapter_number: number; issues: ConflictExplanation[]; report: string; canon_version: number }> {
+export function getNovelConflicts(
+  id: string,
+  chapterNumber?: number,
+): Promise<{ chapter_number: number; issues: ConflictExplanation[]; report: string; canon_version: number }> {
   const query = chapterNumber ? `?chapter_number=${encodeURIComponent(String(chapterNumber))}` : "";
   return request(`/api/v1/novels/${encodeURIComponent(id)}/conflicts${query}`);
 }
@@ -331,7 +346,16 @@ export function evaluateMemoryQuality(id: string, k = 5): Promise<MemoryQualityR
   });
 }
 
-export function rebuildMemory(id: string, evaluate = true, k = 5): Promise<{ run: MemoryQualityRun; rebuild: Record<string, unknown>; quality: MemoryQualityRun["report"]; memory: Record<string, unknown> }> {
+export function rebuildMemory(
+  id: string,
+  evaluate = true,
+  k = 5,
+): Promise<{
+  run: MemoryQualityRun;
+  rebuild: Record<string, unknown>;
+  quality: MemoryQualityRun["report"];
+  memory: Record<string, unknown>;
+}> {
   return request(`/api/v1/novels/${encodeURIComponent(id)}/memory/rebuild`, {
     method: "POST",
     body: JSON.stringify({ evaluate, k }),
@@ -358,7 +382,9 @@ export function getPlanningVersion(
   versionNumber: number,
 ): Promise<PlanningVersion> {
   const query = new URLSearchParams({ chapter_number: String(chapterNumber) });
-  return request(`/api/v1/novels/${encodeURIComponent(id)}/planning/${artifactType}/versions/${versionNumber}?${query}`);
+  return request(
+    `/api/v1/novels/${encodeURIComponent(id)}/planning/${artifactType}/versions/${versionNumber}?${query}`,
+  );
 }
 
 export function getPlanningVersionDiff(
@@ -382,10 +408,13 @@ export function evaluateChapterVersion(
   versionNumber: number,
   includeJudge: boolean,
 ): Promise<ChapterEvaluation> {
-  return request(`/api/v1/novels/${encodeURIComponent(id)}/chapters/${chapterNumber}/versions/${versionNumber}/evaluations`, {
-    method: "POST",
-    body: JSON.stringify({ include_judge: includeJudge }),
-  });
+  return request(
+    `/api/v1/novels/${encodeURIComponent(id)}/chapters/${chapterNumber}/versions/${versionNumber}/evaluations`,
+    {
+      method: "POST",
+      body: JSON.stringify({ include_judge: includeJudge }),
+    },
+  );
 }
 
 export function setChapterEvaluationBaseline(
@@ -393,9 +422,12 @@ export function setChapterEvaluationBaseline(
   chapterNumber: number,
   evaluationId: number,
 ): Promise<ChapterEvaluation> {
-  return request(`/api/v1/novels/${encodeURIComponent(id)}/chapters/${chapterNumber}/evaluations/${evaluationId}/baseline`, {
-    method: "PUT",
-  });
+  return request(
+    `/api/v1/novels/${encodeURIComponent(id)}/chapters/${chapterNumber}/evaluations/${evaluationId}/baseline`,
+    {
+      method: "PUT",
+    },
+  );
 }
 
 export function compareChapterEvaluations(
@@ -412,10 +444,7 @@ export function listEvaluationBenchmarks(limit = 50): Promise<EvaluationBenchmar
   return request<EvaluationBenchmarkRun[]>(`/api/v1/evaluations/benchmarks?limit=${limit}`);
 }
 
-export function runEvaluationBenchmark(
-  includeJudge: boolean,
-  baselineRunId = "",
-): Promise<EvaluationBenchmarkRun> {
+export function runEvaluationBenchmark(includeJudge: boolean, baselineRunId = ""): Promise<EvaluationBenchmarkRun> {
   return request<EvaluationBenchmarkRun>("/api/v1/evaluations/benchmarks", {
     method: "POST",
     body: JSON.stringify({
@@ -425,7 +454,10 @@ export function runEvaluationBenchmark(
   });
 }
 
-export type CreateNovelPayload = Pick<Novel, "title" | "genre" | "inspiration" | "total_chapters" | "style" | "planning_review_enabled"> & {
+export type CreateNovelPayload = Pick<
+  Novel,
+  "title" | "genre" | "inspiration" | "total_chapters" | "style" | "planning_review_enabled"
+> & {
   creative_brief: CreativeBrief;
   content_type_resource_id?: string;
   style_resource_id?: string;
@@ -438,7 +470,9 @@ export function createNovel(payload: CreateNovelPayload): Promise<Novel> {
 }
 
 export function deleteNovel(id: string): Promise<{ deleted: boolean; novel_id: string }> {
-  return request<{ deleted: boolean; novel_id: string }>(`/api/v1/novels/${encodeURIComponent(id)}`, { method: "DELETE" });
+  return request<{ deleted: boolean; novel_id: string }>(`/api/v1/novels/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
 }
 
 export function getModelSettings(): Promise<ModelSettings> {
@@ -490,11 +524,15 @@ export async function streamNovel(
   review: ReviewSubmission | PlanningReviewSubmission | undefined,
   onEvent: (event: StreamEvent) => void,
 ): Promise<void> {
-  return streamRequest(`/api/v1/novels/${encodeURIComponent(id)}/${action}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: action === "resume" ? JSON.stringify(review ?? { feedback: "approve" }) : undefined,
-  }, onEvent);
+  return streamRequest(
+    `/api/v1/novels/${encodeURIComponent(id)}/${action}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: action === "resume" ? JSON.stringify(review ?? { feedback: "approve" }) : undefined,
+    },
+    onEvent,
+  );
 }
 
 export function startNovelJob(
@@ -515,31 +553,18 @@ export function startCanonJob(id: string, operation: CanonOperation): Promise<Ru
   });
 }
 
-export function startBookRevisionJob(
-  id: string,
-  chapterNumber: number,
-  feedback: string,
-): Promise<RunJob> {
+export function startBookRevisionJob(id: string, chapterNumber: number, feedback: string): Promise<RunJob> {
   return request(`/api/v1/novels/${encodeURIComponent(id)}/jobs/book-revision`, {
     method: "POST",
     body: JSON.stringify({ chapter_number: chapterNumber, feedback }),
   });
 }
 
-export function listChapterCandidates(
-  id: string,
-  chapterNumber: number,
-): Promise<ChapterCandidate[]> {
-  return request(
-    `/api/v1/novels/${encodeURIComponent(id)}/chapters/${chapterNumber}/candidates`,
-  );
+export function listChapterCandidates(id: string, chapterNumber: number): Promise<ChapterCandidate[]> {
+  return request(`/api/v1/novels/${encodeURIComponent(id)}/chapters/${chapterNumber}/candidates`);
 }
 
-export function startCandidateGenerationJob(
-  id: string,
-  count: number,
-  instruction: string,
-): Promise<RunJob> {
+export function startCandidateGenerationJob(id: string, count: number, instruction: string): Promise<RunJob> {
   return request(`/api/v1/novels/${encodeURIComponent(id)}/jobs/candidates`, {
     method: "POST",
     body: JSON.stringify({ count, instruction }),
@@ -562,7 +587,11 @@ export function getRunJobEvents(
   );
 }
 
-export function listWorkspaces(): Promise<{ items: Array<{ id: string; name: string; role?: string }>; has_more: boolean; next_cursor: string | null }> {
+export function listWorkspaces(): Promise<{
+  items: Array<{ id: string; name: string; role?: string }>;
+  has_more: boolean;
+  next_cursor: string | null;
+}> {
   return request("/api/v1/workspaces");
 }
 
@@ -575,18 +604,18 @@ export async function streamCanonUpdate(
   operation: CanonOperation,
   onEvent: (event: StreamEvent) => void,
 ): Promise<void> {
-  return streamRequest(`/api/v1/novels/${encodeURIComponent(id)}/canon`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(operation),
-  }, onEvent);
+  return streamRequest(
+    `/api/v1/novels/${encodeURIComponent(id)}/canon`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(operation),
+    },
+    onEvent,
+  );
 }
 
-async function streamRequest(
-  path: string,
-  init: RequestInit,
-  onEvent: (event: StreamEvent) => void,
-): Promise<void> {
+async function streamRequest(path: string, init: RequestInit, onEvent: (event: StreamEvent) => void): Promise<void> {
   const response = await fetchApi(`${API_BASE}${path}`, {
     ...init,
     signal: requestSignal(init?.signal),

@@ -31,10 +31,14 @@ describe("WorkspaceHeader", () => {
   });
 
   it("shows the actual backend readiness instead of a fixed healthy label", () => {
-    const { rerender } = render(<WorkspaceHeader projectTitle="" serviceStatus="offline" authEnabled={false} authUser={null} {...actions} />);
+    const { rerender } = render(
+      <WorkspaceHeader projectTitle="" serviceStatus="offline" authEnabled={false} authUser={null} {...actions} />,
+    );
     expect(screen.getByRole("status")).toHaveTextContent("服务未连接");
 
-    rerender(<WorkspaceHeader projectTitle="" serviceStatus="degraded" authEnabled={false} authUser={null} {...actions} />);
+    rerender(
+      <WorkspaceHeader projectTitle="" serviceStatus="degraded" authEnabled={false} authUser={null} {...actions} />,
+    );
     expect(screen.getByRole("status")).toHaveTextContent("服务需要关注");
   });
 

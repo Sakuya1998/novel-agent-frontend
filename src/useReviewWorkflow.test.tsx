@@ -5,7 +5,10 @@ import { useReviewWorkflow } from "./useReviewWorkflow";
 function deferred() {
   let resolve!: () => void;
   let reject!: (reason: Error) => void;
-  const promise = new Promise<void>((done, fail) => { resolve = done; reject = fail; });
+  const promise = new Promise<void>((done, fail) => {
+    resolve = done;
+    reject = fail;
+  });
   return { promise, resolve, reject };
 }
 
@@ -24,44 +27,74 @@ describe("useReviewWorkflow", () => {
     });
     expect(onSubmit).toHaveBeenCalledExactlyOnceWith({ feedback: "Revise", scene_number: undefined });
     expect(result.current.busyAction).toBe("revision");
-    await act(async () => { pending.resolve(); await request; });
+    await act(async () => {
+      pending.resolve();
+      await request;
+    });
     expect(result.current.busyAction).toBe("");
   });
 
-  it.each(["novel", "chapter"])("keeps a newer %s review and command intact when an old request settles", async (scope) => {
-    const old = deferred();
-    const current = deferred();
-    const onSubmit = vi.fn().mockReturnValueOnce(old.promise).mockReturnValueOnce(current.promise);
-    const { result, rerender } = renderHook(
-      ({ novelId, chapterNumber }) => useReviewWorkflow({ novelId, chapterNumber, onSubmit }),
-      { initialProps: { novelId: "n1", chapterNumber: 2 } },
-    );
-    act(() => result.current.setFeedback("Old"));
-    let oldRequest!: Promise<void>;
-    act(() => { oldRequest = result.current.submitRevision(); });
-    rerender({ novelId: scope === "novel" ? "n2" : "n1", chapterNumber: scope === "chapter" ? 3 : 2 });
-    act(() => { result.current.selectScene(4); result.current.setFeedback("New"); });
-    let currentRequest!: Promise<void>;
-    act(() => { currentRequest = result.current.submitRevision(); });
-    await act(async () => { old.resolve(); await oldRequest; });
-    expect(result.current.feedback).toBe("New");
-    expect(result.current.sceneNumber).toBe(4);
-    expect(result.current.busyAction).toBe("revision");
-    expect(result.current.focusRequest).toBe(0);
-    await act(async () => { current.reject(new Error("Current failed")); await currentRequest; });
-    expect(result.current.error).toBe("Current failed");
-    expect(result.current.feedback).toBe("New");
-  });
+  it.each(["novel", "chapter"])(
+    "keeps a newer %s review and command intact when an old request settles",
+    async (scope) => {
+      const old = deferred();
+      const current = deferred();
+      const onSubmit = vi.fn().mockReturnValueOnce(old.promise).mockReturnValueOnce(current.promise);
+      const { result, rerender } = renderHook(
+        ({ novelId, chapterNumber }) => useReviewWorkflow({ novelId, chapterNumber, onSubmit }),
+        { initialProps: { novelId: "n1", chapterNumber: 2 } },
+      );
+      act(() => result.current.setFeedback("Old"));
+      let oldRequest!: Promise<void>;
+      act(() => {
+        oldRequest = result.current.submitRevision();
+      });
+      rerender({ novelId: scope === "novel" ? "n2" : "n1", chapterNumber: scope === "chapter" ? 3 : 2 });
+      act(() => {
+        result.current.selectScene(4);
+        result.current.setFeedback("New");
+      });
+      let currentRequest!: Promise<void>;
+      act(() => {
+        currentRequest = result.current.submitRevision();
+      });
+      await act(async () => {
+        old.resolve();
+        await oldRequest;
+      });
+      expect(result.current.feedback).toBe("New");
+      expect(result.current.sceneNumber).toBe(4);
+      expect(result.current.busyAction).toBe("revision");
+      expect(result.current.focusRequest).toBe(0);
+      await act(async () => {
+        current.reject(new Error("Current failed"));
+        await currentRequest;
+      });
+      expect(result.current.error).toBe("Current failed");
+      expect(result.current.feedback).toBe("New");
+    },
+  );
 
   it("preserves newer feedback and scope in the same chapter after a late completion", async () => {
     const pending = deferred();
     const onSubmit = vi.fn().mockReturnValue(pending.promise);
     const { result } = renderHook(() => useReviewWorkflow({ novelId: "n1", chapterNumber: 2, onSubmit }));
-    act(() => { result.current.selectScene(2); result.current.setFeedback("Original"); });
+    act(() => {
+      result.current.selectScene(2);
+      result.current.setFeedback("Original");
+    });
     let request!: Promise<void>;
-    act(() => { request = result.current.submitRevision(); });
-    act(() => { result.current.selectScene(3); result.current.setFeedback("Newer notes"); });
-    await act(async () => { pending.resolve(); await request; });
+    act(() => {
+      request = result.current.submitRevision();
+    });
+    act(() => {
+      result.current.selectScene(3);
+      result.current.setFeedback("Newer notes");
+    });
+    await act(async () => {
+      pending.resolve();
+      await request;
+    });
     expect(result.current.feedback).toBe("Newer notes");
     expect(result.current.sceneNumber).toBe(3);
     expect(result.current.focusRequest).toBe(0);

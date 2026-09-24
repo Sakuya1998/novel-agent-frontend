@@ -41,7 +41,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       const items = response.items as WorkspaceSummary[];
       setWorkspaces(items);
       setWorkspaceId((current) => {
-        const next = items.some((item) => item.id === current) ? current : items[0]?.id ?? null;
+        const next = items.some((item) => item.id === current) ? current : (items[0]?.id ?? null);
         if (next) localStorage.setItem(SELECTED_WORKSPACE_KEY, next);
         else localStorage.removeItem(SELECTED_WORKSPACE_KEY);
         return next;
@@ -54,25 +54,40 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  useEffect(() => { void refresh(); }, [sessionStatus, user?.id]);
+  useEffect(() => {
+    void refresh();
+  }, [sessionStatus, user?.id]);
 
-  const value = useMemo<WorkspaceContextValue>(() => ({
-    workspaces,
-    workspace: workspaces.find((item) => item.id === workspaceId) ?? null,
-    workspaceId,
-    loading,
-    error,
-    selectWorkspace: (next) => {
-      setWorkspaceId(next);
-      localStorage.setItem(SELECTED_WORKSPACE_KEY, next);
-    },
-    refresh,
-  }), [error, loading, refresh, workspaceId, workspaces]);
+  const value = useMemo<WorkspaceContextValue>(
+    () => ({
+      workspaces,
+      workspace: workspaces.find((item) => item.id === workspaceId) ?? null,
+      workspaceId,
+      loading,
+      error,
+      selectWorkspace: (next) => {
+        setWorkspaceId(next);
+        localStorage.setItem(SELECTED_WORKSPACE_KEY, next);
+      },
+      refresh,
+    }),
+    [error, loading, refresh, workspaceId, workspaces],
+  );
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }
 
 export function useWorkspace(): WorkspaceContextValue {
   const value = useContext(WorkspaceContext);
-  return value ?? { workspaces: [], workspace: null, workspaceId: null, loading: false, error: "", selectWorkspace: () => undefined, refresh: async () => undefined };
+  return (
+    value ?? {
+      workspaces: [],
+      workspace: null,
+      workspaceId: null,
+      loading: false,
+      error: "",
+      selectWorkspace: () => undefined,
+      refresh: async () => undefined,
+    }
+  );
 }

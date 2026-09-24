@@ -32,14 +32,19 @@ const nodeEvent: StreamEvent = { type: "node_done", node: "scene_writer" };
 function response(job: RunJob, sequence?: number): RunJobEventsResponse {
   return {
     job,
-    events: sequence === undefined ? [] : [{
-      id: sequence,
-      job_id: job.id,
-      sequence,
-      event_type: nodeEvent.type,
-      payload: nodeEvent,
-      created_at: "2026-09-17",
-    }],
+    events:
+      sequence === undefined
+        ? []
+        : [
+            {
+              id: sequence,
+              job_id: job.id,
+              sequence,
+              event_type: nodeEvent.type,
+              payload: nodeEvent,
+              created_at: "2026-09-17",
+            },
+          ],
     next_after_sequence: sequence ?? 0,
   };
 }
@@ -85,8 +90,14 @@ describe("useRunJob", () => {
     const firstStart = result.current.startJob("novel-1", () => first.promise);
     const secondStart = result.current.startJob("novel-1", () => second.promise);
 
-    await act(async () => { second.resolve(newerJob); await secondStart; });
-    await act(async () => { first.resolve(runningJob); await firstStart; });
+    await act(async () => {
+      second.resolve(newerJob);
+      await secondStart;
+    });
+    await act(async () => {
+      first.resolve(runningJob);
+      await firstStart;
+    });
 
     expect(options.onJobUpdate).toHaveBeenCalledExactlyOnceWith("novel-1", newerJob);
     expect(getRunJobEvents).toHaveBeenCalledExactlyOnceWith("job-2", 0, expect.any(AbortSignal));
@@ -100,7 +111,10 @@ describe("useRunJob", () => {
     const { result, unmount } = renderHook(() => useRunJob(options));
     const start = result.current.startJob("novel-1", () => pending.promise);
     unmount();
-    await act(async () => { pending.resolve(runningJob); await start; });
+    await act(async () => {
+      pending.resolve(runningJob);
+      await start;
+    });
 
     expect(getRunJobEvents).not.toHaveBeenCalled();
     expect(options.onJobUpdate).not.toHaveBeenCalled();
@@ -112,14 +126,16 @@ describe("useRunJob", () => {
     const pending = deferred<RunJob>();
     const options = createOptions();
     vi.mocked(getRunJobEvents).mockResolvedValue(response(completedJob));
-    const { result, rerender } = renderHook(
-      ({ selectedId }) => useRunJob({ ...options, selectedId }),
-      { initialProps: { selectedId: "novel-1" } },
-    );
+    const { result, rerender } = renderHook(({ selectedId }) => useRunJob({ ...options, selectedId }), {
+      initialProps: { selectedId: "novel-1" },
+    });
     const start = result.current.startJob("novel-1", () => pending.promise);
     rerender({ selectedId: "novel-2" });
     rerender({ selectedId: "novel-1" });
-    await act(async () => { pending.resolve(runningJob); await start; });
+    await act(async () => {
+      pending.resolve(runningJob);
+      await start;
+    });
 
     expect(getRunJobEvents).not.toHaveBeenCalled();
     expect(options.onJobUpdate).not.toHaveBeenCalled();
@@ -243,9 +259,7 @@ describe("useRunJob", () => {
     const replacementJob = { ...runningJob, id: "job-2" };
     const cancelledJob = { ...runningJob, status: "cancelled" as const };
     const options = createOptions({ activeJob: runningJob });
-    vi.mocked(getRunJobEvents)
-      .mockReturnValueOnce(firstPoll.promise)
-      .mockReturnValueOnce(secondPoll.promise);
+    vi.mocked(getRunJobEvents).mockReturnValueOnce(firstPoll.promise).mockReturnValueOnce(secondPoll.promise);
     vi.mocked(cancelRunJob).mockReturnValue(pendingCancellation.promise);
 
     const { result } = renderHook(() => useRunJob(options));
@@ -274,9 +288,7 @@ describe("useRunJob", () => {
     const pendingCancellation = deferred<RunJob>();
     const replacementJob = { ...runningJob, id: "job-2" };
     const options = createOptions({ activeJob: runningJob });
-    vi.mocked(getRunJobEvents)
-      .mockReturnValueOnce(firstPoll.promise)
-      .mockReturnValueOnce(secondPoll.promise);
+    vi.mocked(getRunJobEvents).mockReturnValueOnce(firstPoll.promise).mockReturnValueOnce(secondPoll.promise);
     vi.mocked(cancelRunJob).mockReturnValue(pendingCancellation.promise);
 
     const { result } = renderHook(() => useRunJob(options));

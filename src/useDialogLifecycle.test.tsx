@@ -18,14 +18,20 @@ function DialogHarness({ busy = false, onClose = vi.fn() }: { busy?: boolean; on
   };
   const { dialogRef, onBackdropMouseDown } = useDialogLifecycle<HTMLElement>(open, close, busy);
 
-  return <>
-    <button type="button" onClick={() => setOpen(true)}>打开弹窗</button>
-    {open ? <div data-testid="backdrop" onMouseDown={onBackdropMouseDown}>
-      <section ref={dialogRef} tabIndex={-1} role="dialog" aria-label="测试弹窗">
-        <button type="button">弹窗操作</button>
-      </section>
-    </div> : null}
-  </>;
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)}>
+        打开弹窗
+      </button>
+      {open ? (
+        <div data-testid="backdrop" onMouseDown={onBackdropMouseDown}>
+          <section ref={dialogRef} tabIndex={-1} role="dialog" aria-label="测试弹窗">
+            <button type="button">弹窗操作</button>
+          </section>
+        </div>
+      ) : null}
+    </>
+  );
 }
 
 describe("useDialogLifecycle", () => {

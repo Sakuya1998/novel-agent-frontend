@@ -6,7 +6,9 @@ export type ApiOperations = operations;
 
 type OperationName = keyof ApiOperations;
 type OperationParameters<Name extends OperationName> = ApiOperations[Name]["parameters"];
-type OperationRequest<Name extends OperationName> = ApiOperations[Name] extends { requestBody: { content: { "application/json": infer Body } } }
+type OperationRequest<Name extends OperationName> = ApiOperations[Name] extends {
+  requestBody: { content: { "application/json": infer Body } };
+}
   ? Body
   : never;
 type OperationResponse<Name extends OperationName> = ApiOperations[Name] extends {
@@ -56,9 +58,14 @@ export async function apiRequest<ResponseBody, RequestBody = never>(
   const headers = new Headers(options.headers);
   const method = options.method ?? (options.body === undefined ? "GET" : "POST");
   if (["POST", "PUT", "PATCH", "DELETE"].includes(method) && !headers.has("X-CSRF-Token")) {
-    const csrf = typeof document === "undefined"
-      ? ""
-      : document.cookie.split(";").map((item) => item.trim()).find((item) => item.startsWith("novel_agent_csrf="))?.slice(17) ?? "";
+    const csrf =
+      typeof document === "undefined"
+        ? ""
+        : (document.cookie
+            .split(";")
+            .map((item) => item.trim())
+            .find((item) => item.startsWith("novel_agent_csrf="))
+            ?.slice(17) ?? "");
     if (csrf) headers.set("X-CSRF-Token", decodeURIComponent(csrf));
   }
   if (options.body !== undefined && !headers.has("Content-Type")) {
@@ -77,12 +84,13 @@ export async function apiRequest<ResponseBody, RequestBody = never>(
   });
   if (!response.ok) {
     const details = await response.json().catch(() => undefined);
-    const message = details && typeof details === "object" && "detail" in details && typeof details.detail === "string"
-      ? details.detail
-      : `Request failed (${response.status})`;
+    const message =
+      details && typeof details === "object" && "detail" in details && typeof details.detail === "string"
+        ? details.detail
+        : `Request failed (${response.status})`;
     throw new ApiRequestError(message, response.status, response.headers.get("X-Request-ID") ?? undefined, details);
   }
-  return await response.json() as ResponseBody;
+  return (await response.json()) as ResponseBody;
 }
 
 function interpolatePath(path: string, parameters: Record<string, unknown> | undefined): string {
@@ -135,7 +143,10 @@ export interface JobEventEnvelope<Payload extends Record<string, unknown> = Reco
   created_at: string;
 }
 
-export interface JobEventsResponse<Job = Record<string, unknown>, Payload extends Record<string, unknown> = Record<string, unknown>> {
+export interface JobEventsResponse<
+  Job = Record<string, unknown>,
+  Payload extends Record<string, unknown> = Record<string, unknown>,
+> {
   job: Job;
   events: JobEventEnvelope<Payload>[];
   next_after_sequence: number;

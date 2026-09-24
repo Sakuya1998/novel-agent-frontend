@@ -30,13 +30,15 @@ const candidate = {
 describe("ChapterCandidatesPanel", () => {
   it("starts generation with the selected count and instruction", async () => {
     const onGenerate = vi.fn().mockResolvedValue(undefined);
-    render(<ChapterCandidatesPanel
-      candidates={[]}
-      currentContent="当前稿"
-      disabled={false}
-      onGenerate={onGenerate}
-      onSelect={vi.fn().mockResolvedValue(undefined)}
-    />);
+    render(
+      <ChapterCandidatesPanel
+        candidates={[]}
+        currentContent="当前稿"
+        disabled={false}
+        onGenerate={onGenerate}
+        onSelect={vi.fn().mockResolvedValue(undefined)}
+      />,
+    );
 
     await userEvent.click(screen.getByRole("button", { name: "4 稿" }));
     await userEvent.type(screen.getByLabelText("候选稿创作方向"), "增强悬念");
@@ -47,13 +49,15 @@ describe("ChapterCandidatesPanel", () => {
 
   it("compares and selects a persisted candidate", async () => {
     const onSelect = vi.fn().mockResolvedValue(undefined);
-    render(<ChapterCandidatesPanel
-      candidates={[candidate]}
-      currentContent="当前稿完整正文。"
-      disabled={false}
-      onGenerate={vi.fn().mockResolvedValue(undefined)}
-      onSelect={onSelect}
-    />);
+    render(
+      <ChapterCandidatesPanel
+        candidates={[candidate]}
+        currentContent="当前稿完整正文。"
+        disabled={false}
+        onGenerate={vi.fn().mockResolvedValue(undefined)}
+        onSelect={onSelect}
+      />,
+    );
 
     expect(screen.getByText("90.0")).toBeInTheDocument();
     expect(screen.getByText("候选稿预览。")).toBeInTheDocument();
@@ -66,13 +70,15 @@ describe("ChapterCandidatesPanel", () => {
   });
 
   it("keeps stale candidates comparable but not selectable", () => {
-    render(<ChapterCandidatesPanel
-      candidates={[{ ...candidate, status: "stale" }]}
-      currentContent="当前稿完整正文。"
-      disabled={false}
-      onGenerate={vi.fn().mockResolvedValue(undefined)}
-      onSelect={vi.fn().mockResolvedValue(undefined)}
-    />);
+    render(
+      <ChapterCandidatesPanel
+        candidates={[{ ...candidate, status: "stale" }]}
+        currentContent="当前稿完整正文。"
+        disabled={false}
+        onGenerate={vi.fn().mockResolvedValue(undefined)}
+        onSelect={vi.fn().mockResolvedValue(undefined)}
+      />,
+    );
 
     expect(screen.getByText("已过期")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "对比" }).hasAttribute("disabled")).toBe(false);
@@ -81,9 +87,23 @@ describe("ChapterCandidatesPanel", () => {
 
   it("notifies after candidate adoption resolves", async () => {
     let resolve!: () => void;
-    const onSelect = vi.fn(() => new Promise<void>((done) => { resolve = done; }));
+    const onSelect = vi.fn(
+      () =>
+        new Promise<void>((done) => {
+          resolve = done;
+        }),
+    );
     const onSelected = vi.fn();
-    render(<ChapterCandidatesPanel candidates={[candidate]} currentContent="当前稿" disabled={false} onGenerate={vi.fn().mockResolvedValue(undefined)} onSelect={onSelect} onSelected={onSelected} />);
+    render(
+      <ChapterCandidatesPanel
+        candidates={[candidate]}
+        currentContent="当前稿"
+        disabled={false}
+        onGenerate={vi.fn().mockResolvedValue(undefined)}
+        onSelect={onSelect}
+        onSelected={onSelected}
+      />,
+    );
 
     const click = userEvent.click(screen.getByRole("button", { name: "采用此稿" }));
     await waitFor(() => expect(onSelect).toHaveBeenCalledOnce());
@@ -98,7 +118,17 @@ describe("ChapterCandidatesPanel", () => {
     const onSelect = vi.fn().mockRejectedValue(failure);
     const onSelected = vi.fn();
     const onError = vi.fn();
-    render(<ChapterCandidatesPanel candidates={[candidate]} currentContent="当前稿" disabled={false} onGenerate={vi.fn().mockResolvedValue(undefined)} onSelect={onSelect} onSelected={onSelected} onError={onError} />);
+    render(
+      <ChapterCandidatesPanel
+        candidates={[candidate]}
+        currentContent="当前稿"
+        disabled={false}
+        onGenerate={vi.fn().mockResolvedValue(undefined)}
+        onSelect={onSelect}
+        onSelected={onSelected}
+        onError={onError}
+      />,
+    );
 
     await userEvent.click(screen.getByRole("button", { name: "采用此稿" }));
 

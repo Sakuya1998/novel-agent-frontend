@@ -9,6 +9,12 @@ import "./workspace.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <AppErrorBoundary><SessionProvider><WorkspaceProvider><AppRouter /></WorkspaceProvider></SessionProvider></AppErrorBoundary>
+    <AppErrorBoundary>
+      <SessionProvider>
+        <WorkspaceProvider>
+          <AppRouter />
+        </WorkspaceProvider>
+      </SessionProvider>
+    </AppErrorBoundary>
   </StrictMode>,
 );

@@ -57,107 +57,129 @@ export function useRunJob(options: UseRunJobOptions) {
 
   const isActiveRun = useCallback((run: ActiveRun) => {
     const current = activeRunRef.current;
-    return mountedRef.current && optionsRef.current.selectedId === run.novelId
-      && current?.novelId === run.novelId
-      && current.jobId === run.jobId;
+    return (
+      mountedRef.current &&
+      optionsRef.current.selectedId === run.novelId &&
+      current?.novelId === run.novelId &&
+      current.jobId === run.jobId
+    );
   }, []);
 
-  const isCurrent = useCallback((run: ActiveRun, controller: AbortController) => {
-    return !controller.signal.aborted && isActiveRun(run);
-  }, [isActiveRun]);
+  const isCurrent = useCallback(
+    (run: ActiveRun, controller: AbortController) => {
+      return !controller.signal.aborted && isActiveRun(run);
+    },
+    [isActiveRun],
+  );
 
-  const poll = useCallback(async (run: ActiveRun) => {
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-    activeRunRef.current = run;
-    setConnectionStatus("polling");
-    let failureCount = 0;
-    let settled = false;
+  const poll = useCallback(
+    async (run: ActiveRun) => {
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+      activeRunRef.current = run;
+      setConnectionStatus("polling");
+      let failureCount = 0;
+      let settled = false;
 
-    try {
-      while (!controller.signal.aborted) {
-        let result: JobEventsResponse<RunJob, StreamEvent> | {
-          job: RunJob;
-          events: Array<{ job_id: string; sequence: number; payload: StreamEvent }>;
-          next_after_sequence?: number;
-        };
-        try {
-          result = await getRunJobEvents(run.jobId, sequenceRef.current, controller.signal);
-          failureCount = 0;
-        } catch (reason) {
-          if (isAbortError(reason)) throw reason;
-          if (!isCurrent(run, controller)) return;
-          if (failureCount === RETRY_DELAYS.length) throw reason;
-          setConnectionStatus("reconnecting");
-          await pollDelay(RETRY_DELAYS[failureCount], controller.signal);
-          failureCount += 1;
-          if (isCurrent(run, controller)) setConnectionStatus("polling");
-          continue;
-        }
-
-        if (!isCurrent(run, controller)
-          || result.job.id !== run.jobId
-          || result.job.novel_id !== run.novelId) return;
-
-        currentJobRef.current = result.job;
-        for (const record of result.events) {
-          if (!isCurrent(run, controller)) return;
-          if (record.job_id !== run.jobId) continue;
-          optionsRef.current.onEvent(run.novelId, record.payload);
-          sequenceRef.current = Math.max(sequenceRef.current, record.sequence);
-        }
-        if (result.next_after_sequence !== undefined) {
-          sequenceRef.current = Math.max(sequenceRef.current, result.next_after_sequence);
-        }
-        if (!isCurrent(run, controller)) return;
-        optionsRef.current.onJobUpdate(run.novelId, result.job);
-
-        if (result.events.length >= 200) continue;
-        if (!ACTIVE_JOB_STATUSES.has(result.job.status)) {
-          if (result.job.status === "failed") {
-            optionsRef.current.onError(run.novelId, result.job.error || "后台任务执行失败");
+      try {
+        while (!controller.signal.aborted) {
+          let result:
+            | JobEventsResponse<RunJob, StreamEvent>
+            | {
+                job: RunJob;
+                events: Array<{ job_id: string; sequence: number; payload: StreamEvent }>;
+                next_after_sequence?: number;
+              };
+          try {
+            result = await getRunJobEvents(run.jobId, sequenceRef.current, controller.signal);
+            failureCount = 0;
+          } catch (reason) {
+            if (isAbortError(reason)) throw reason;
+            if (!isCurrent(run, controller)) return;
+            if (failureCount === RETRY_DELAYS.length) throw reason;
+            setConnectionStatus("reconnecting");
+            await pollDelay(RETRY_DELAYS[failureCount], controller.signal);
+            failureCount += 1;
+            if (isCurrent(run, controller)) setConnectionStatus("polling");
+            continue;
           }
-          settled = true;
-          break;
+
+          if (!isCurrent(run, controller) || result.job.id !== run.jobId || result.job.novel_id !== run.novelId) return;
+
+          currentJobRef.current = result.job;
+          for (const record of result.events) {
+            if (!isCurrent(run, controller)) return;
+            if (record.job_id !== run.jobId) continue;
+            optionsRef.current.onEvent(run.novelId, record.payload);
+            sequenceRef.current = Math.max(sequenceRef.current, record.sequence);
+          }
+          if (result.next_after_sequence !== undefined) {
+            sequenceRef.current = Math.max(sequenceRef.current, result.next_after_sequence);
+          }
+          if (!isCurrent(run, controller)) return;
+          optionsRef.current.onJobUpdate(run.novelId, result.job);
+
+          if (result.events.length >= 200) continue;
+          if (!ACTIVE_JOB_STATUSES.has(result.job.status)) {
+            if (result.job.status === "failed") {
+              optionsRef.current.onError(run.novelId, result.job.error || "后台任务执行失败");
+            }
+            settled = true;
+            break;
+          }
+          await pollDelay(350, controller.signal);
         }
-        await pollDelay(350, controller.signal);
-      }
 
-      if (settled && isCurrent(run, controller)) {
-        setConnectionStatus("idle");
-        await optionsRef.current.onSettled(run.novelId);
+        if (settled && isCurrent(run, controller)) {
+          setConnectionStatus("idle");
+          await optionsRef.current.onSettled(run.novelId);
+        }
+      } catch (reason) {
+        if (!isAbortError(reason) && isCurrent(run, controller)) {
+          setConnectionStatus("failed");
+          optionsRef.current.onError(run.novelId, reason instanceof Error ? reason.message : "后台任务状态读取失败");
+          if (!settled) await optionsRef.current.onSettled(run.novelId).catch(() => undefined);
+        }
       }
-    } catch (reason) {
-      if (!isAbortError(reason) && isCurrent(run, controller)) {
-        setConnectionStatus("failed");
-        optionsRef.current.onError(
-          run.novelId,
-          reason instanceof Error ? reason.message : "后台任务状态读取失败",
-        );
-        if (!settled) await optionsRef.current.onSettled(run.novelId).catch(() => undefined);
+    },
+    [isCurrent],
+  );
+
+  const beginPolling = useCallback(
+    (novelId: string, job: RunJob, resetSequence: boolean) => {
+      const current = activeRunRef.current;
+      if (
+        current?.novelId === novelId &&
+        current.jobId === job.id &&
+        abortRef.current &&
+        !abortRef.current.signal.aborted
+      ) {
+        return;
       }
-    }
-  }, [isCurrent]);
+      if (resetSequence) sequenceRef.current = 0;
+      currentJobRef.current = job;
+      void poll({ novelId, jobId: job.id });
+    },
+    [poll],
+  );
 
-  const beginPolling = useCallback((novelId: string, job: RunJob, resetSequence: boolean) => {
-    const current = activeRunRef.current;
-    if (current?.novelId === novelId && current.jobId === job.id && abortRef.current && !abortRef.current.signal.aborted) {
-      return;
-    }
-    if (resetSequence) sequenceRef.current = 0;
-    currentJobRef.current = job;
-    void poll({ novelId, jobId: job.id });
-  }, [poll]);
-
-  const startJob = useCallback(async (novelId: string, createJob: () => Promise<RunJob>) => {
-    const generation = ++startGenerationRef.current;
-    const job = await createJob();
-    if (!mountedRef.current || generation !== startGenerationRef.current
-      || optionsRef.current.selectedId !== novelId || job.novel_id !== novelId) return;
-    optionsRef.current.onJobUpdate(novelId, job);
-    beginPolling(novelId, job, true);
-  }, [beginPolling]);
+  const startJob = useCallback(
+    async (novelId: string, createJob: () => Promise<RunJob>) => {
+      const generation = ++startGenerationRef.current;
+      const job = await createJob();
+      if (
+        !mountedRef.current ||
+        generation !== startGenerationRef.current ||
+        optionsRef.current.selectedId !== novelId ||
+        job.novel_id !== novelId
+      )
+        return;
+      optionsRef.current.onJobUpdate(novelId, job);
+      beginPolling(novelId, job, true);
+    },
+    [beginPolling],
+  );
 
   const cancelJob = useCallback(async () => {
     const run = activeRunRef.current;
@@ -165,9 +187,7 @@ export function useRunJob(options: UseRunJobOptions) {
     if (!run || !job || !ACTIVE_JOB_STATUSES.has(job.status)) return;
     try {
       const cancelled = await cancelRunJob(run.jobId);
-      if (!isActiveRun(run)
-        || cancelled.id !== run.jobId
-        || cancelled.novel_id !== run.novelId) return;
+      if (!isActiveRun(run) || cancelled.id !== run.jobId || cancelled.novel_id !== run.novelId) return;
       currentJobRef.current = cancelled;
       optionsRef.current.onJobUpdate(run.novelId, cancelled);
       if (ACTIVE_JOB_STATUSES.has(cancelled.status)) return;
@@ -176,10 +196,7 @@ export function useRunJob(options: UseRunJobOptions) {
       await optionsRef.current.onSettled(run.novelId);
     } catch (reason) {
       if (isActiveRun(run)) {
-        optionsRef.current.onError(
-          run.novelId,
-          reason instanceof Error ? reason.message : "停止后台任务失败",
-        );
+        optionsRef.current.onError(run.novelId, reason instanceof Error ? reason.message : "停止后台任务失败");
       }
     }
   }, [isActiveRun]);

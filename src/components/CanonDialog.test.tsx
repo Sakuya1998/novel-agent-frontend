@@ -10,7 +10,9 @@ vi.mock("../api", () => apiMocks);
 
 const canon = {
   version: 3,
-  world_facts: [{ id: "world:1", path: "世界.城市", value: "雾都", source: "world_builder", status: "active" as const }],
+  world_facts: [
+    { id: "world:1", path: "世界.城市", value: "雾都", source: "world_builder", status: "active" as const },
+  ],
   characters: { 林寒: { name: "林寒", role: "主角", personality: "谨慎", appearances: [1], last_seen_chapter: 1 } },
   aliases: {},
   timeline: [],
@@ -21,12 +23,17 @@ const canon = {
 
 describe("CanonDialog", () => {
   beforeEach(() => apiMocks.getNovelCanon.mockResolvedValue(canon));
-  afterEach(() => { cleanup(); vi.clearAllMocks(); });
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
 
   it("requires a reason and submits a structured fact edit", async () => {
     const user = userEvent.setup();
     const onSubmit = vi.fn().mockResolvedValue(undefined);
-    render(<CanonDialog open novelId="novel_1" editable disabled={false} onClose={() => undefined} onSubmit={onSubmit} />);
+    render(
+      <CanonDialog open novelId="novel_1" editable disabled={false} onClose={() => undefined} onSubmit={onSubmit} />,
+    );
 
     expect(await screen.findByText("世界.城市")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "编辑 世界.城市" }));
@@ -37,20 +44,31 @@ describe("CanonDialog", () => {
     await user.type(screen.getByLabelText("变更原因"), "统一新版地名");
     await user.click(save);
 
-    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({
-      action: "upsert_fact",
-      target_type: "world_fact",
-      target_id: "world:1",
-      path: "世界.城市",
-      subject: undefined,
-      kind: undefined,
-      value: "新雾都",
-      reason: "统一新版地名",
-    }));
+    await waitFor(() =>
+      expect(onSubmit).toHaveBeenCalledWith({
+        action: "upsert_fact",
+        target_type: "world_fact",
+        target_id: "world:1",
+        path: "世界.城市",
+        subject: undefined,
+        kind: undefined,
+        value: "新雾都",
+        reason: "统一新版地名",
+      }),
+    );
   });
 
   it("keeps mutation controls disabled outside human review", async () => {
-    render(<CanonDialog open novelId="novel_1" editable={false} disabled={false} onClose={() => undefined} onSubmit={vi.fn()} />);
+    render(
+      <CanonDialog
+        open
+        novelId="novel_1"
+        editable={false}
+        disabled={false}
+        onClose={() => undefined}
+        onSubmit={vi.fn()}
+      />,
+    );
     expect(await screen.findByText("Canon 仅在章节人工审查阶段开放修改。")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "新增" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "编辑 世界.城市" })).toBeDisabled();
@@ -73,7 +91,16 @@ describe("CanonDialog", () => {
     } as never);
 
     const user = userEvent.setup();
-    render(<CanonDialog open novelId="novel_1" editable={false} disabled={false} onClose={() => undefined} onSubmit={vi.fn()} />);
+    render(
+      <CanonDialog
+        open
+        novelId="novel_1"
+        editable={false}
+        disabled={false}
+        onClose={() => undefined}
+        onSubmit={vi.fn()}
+      />,
+    );
     await screen.findByText("世界.城市");
     await user.click(screen.getByRole("tab", { name: "角色与别名" }));
 

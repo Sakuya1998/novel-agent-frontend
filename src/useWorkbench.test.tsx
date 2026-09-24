@@ -84,7 +84,7 @@ function state(status: WorkbenchState["status"], runJob: RunJob | null, novelId 
     evaluations: [],
     chapter_candidates: [],
     run_job: runJob,
-  model_usage: {
+    model_usage: {
       attempts: 0,
       successful_calls: 0,
       failed_attempts: 0,
@@ -94,10 +94,10 @@ function state(status: WorkbenchState["status"], runJob: RunJob | null, novelId 
       output_tokens: 0,
       total_tokens: 0,
       estimated_attempts: 0,
-    by_agent: [],
-  },
-  memory: { schema_version: "book-memory-v1", chapters: 1, arcs: 1 },
-  canon: {
+      by_agent: [],
+    },
+    memory: { schema_version: "book-memory-v1", chapters: 1, arcs: 1 },
+    canon: {
       version: 0,
       world_facts: 0,
       characters: 0,
@@ -133,34 +133,46 @@ describe("useWorkbench background jobs", () => {
     expect(result.current.retryRunConnection).toEqual(expect.any(Function));
   });
 
-  it.each(["revision", "candidate", "restore"])("preserves review input when the real %s command cannot start", async (command) => {
-    api.getNovelState.mockResolvedValue(state("human_review", null));
-    api.startNovelJob.mockRejectedValue(new Error("start unavailable"));
-    const { result } = renderHook(() => {
-      const workbench = useWorkbench();
-      const review = useReviewWorkflow({ novelId: workbench.selectedId ?? "", chapterNumber: 1, onSubmit: workbench.resume });
-      return { workbench, review };
-    });
-    await waitFor(() => expect(result.current.workbench.state?.status).toBe("human_review"));
-    act(() => {
-      result.current.review.selectScene(2);
-      result.current.review.setFeedback("Keep my revision notes");
-    });
+  it.each(["revision", "candidate", "restore"])(
+    "preserves review input when the real %s command cannot start",
+    async (command) => {
+      api.getNovelState.mockResolvedValue(state("human_review", null));
+      api.startNovelJob.mockRejectedValue(new Error("start unavailable"));
+      const { result } = renderHook(() => {
+        const workbench = useWorkbench();
+        const review = useReviewWorkflow({
+          novelId: workbench.selectedId ?? "",
+          chapterNumber: 1,
+          onSubmit: workbench.resume,
+        });
+        return { workbench, review };
+      });
+      await waitFor(() => expect(result.current.workbench.state?.status).toBe("human_review"));
+      act(() => {
+        result.current.review.selectScene(2);
+        result.current.review.setFeedback("Keep my revision notes");
+      });
 
-    await act(async () => {
-      if (command === "revision") await result.current.review.submitRevision();
-      else await expect(result.current.review.replaceDraft(command === "candidate"
-        ? { feedback: "candidate", candidate_id: "c1" }
-        : { feedback: "restore", version_number: 1 })).rejects.toThrow("start unavailable");
-    });
+      await act(async () => {
+        if (command === "revision") await result.current.review.submitRevision();
+        else
+          await expect(
+            result.current.review.replaceDraft(
+              command === "candidate"
+                ? { feedback: "candidate", candidate_id: "c1" }
+                : { feedback: "restore", version_number: 1 },
+            ),
+          ).rejects.toThrow("start unavailable");
+      });
 
-    expect(result.current.workbench.error).toBe("start unavailable");
-    expect(result.current.review.error).toBe("start unavailable");
-    expect(result.current.review.feedback).toBe("Keep my revision notes");
-    expect(result.current.review.sceneNumber).toBe(2);
-    expect(result.current.review.busyAction).toBe("");
-    expect(result.current.review.focusRequest).toBe(0);
-  });
+      expect(result.current.workbench.error).toBe("start unavailable");
+      expect(result.current.review.error).toBe("start unavailable");
+      expect(result.current.review.feedback).toBe("Keep my revision notes");
+      expect(result.current.review.sceneNumber).toBe(2);
+      expect(result.current.review.busyAction).toBe("");
+      expect(result.current.review.focusRequest).toBe(0);
+    },
+  );
 
   it("reconnects to an active persisted job after loading the project", async () => {
     api.getNovelState
@@ -203,14 +215,16 @@ describe("useWorkbench background jobs", () => {
     api.startCandidateGenerationJob.mockResolvedValue(queued);
     api.getRunJobEvents.mockResolvedValue({
       job: completed,
-      events: [{
-        id: 1,
-        job_id: completed.id,
-        sequence: 1,
-        event_type: "candidates_ready",
-        payload: { type: "candidates_ready", chapter_number: 1, count: 3 },
-        created_at: "2026-08-17",
-      }],
+      events: [
+        {
+          id: 1,
+          job_id: completed.id,
+          sequence: 1,
+          event_type: "candidates_ready",
+          payload: { type: "candidates_ready", chapter_number: 1, count: 3 },
+          created_at: "2026-08-17",
+        },
+      ],
     });
 
     const { result } = renderHook(() => useWorkbench());
@@ -219,11 +233,7 @@ describe("useWorkbench background jobs", () => {
       await result.current.generateCandidates(3, "强化人物冲突");
     });
 
-    expect(api.startCandidateGenerationJob).toHaveBeenCalledWith(
-      novel.id,
-      3,
-      "强化人物冲突",
-    );
+    expect(api.startCandidateGenerationJob).toHaveBeenCalledWith(novel.id, 3, "强化人物冲突");
     await waitFor(() => expect(result.current.isStreaming).toBe(false));
   });
 
@@ -231,10 +241,12 @@ describe("useWorkbench background jobs", () => {
     const firstDetail = deferred<Novel>();
     const firstState = deferred<WorkbenchState>();
     api.listNovels.mockResolvedValue([novel, secondNovel]);
-    api.getNovel.mockImplementation((id: string) => id === novel.id ? firstDetail.promise : Promise.resolve(secondNovel));
-    api.getNovelState.mockImplementation((id: string) => id === novel.id
-      ? firstState.promise
-      : Promise.resolve(state("idle", null, secondNovel.id)));
+    api.getNovel.mockImplementation((id: string) =>
+      id === novel.id ? firstDetail.promise : Promise.resolve(secondNovel),
+    );
+    api.getNovelState.mockImplementation((id: string) =>
+      id === novel.id ? firstState.promise : Promise.resolve(state("idle", null, secondNovel.id)),
+    );
 
     const { result } = renderHook(() => useWorkbench());
     await waitFor(() => expect(api.getNovel).toHaveBeenCalledWith(novel.id));
@@ -256,11 +268,9 @@ describe("useWorkbench background jobs", () => {
     const stalePoll = deferred<RunJobEventsResponse>();
     api.listNovels.mockResolvedValue([novel, secondNovel]);
     api.getNovel.mockImplementation((id: string) => Promise.resolve(id === novel.id ? novel : secondNovel));
-    api.getNovelState.mockImplementation((id: string) => Promise.resolve(
-      id === novel.id
-        ? state("running", job("running"))
-        : state("idle", null, secondNovel.id),
-    ));
+    api.getNovelState.mockImplementation((id: string) =>
+      Promise.resolve(id === novel.id ? state("running", job("running")) : state("idle", null, secondNovel.id)),
+    );
     api.getRunJobEvents.mockReturnValue(stalePoll.promise);
 
     const { result } = renderHook(() => useWorkbench());
@@ -272,19 +282,21 @@ describe("useWorkbench background jobs", () => {
     await act(async () => {
       stalePoll.resolve({
         job: job("waiting_review"),
-        events: [{
-          id: 1,
-          job_id: "job-1",
-          sequence: 1,
-          event_type: "interrupt",
-          payload: {
-            type: "interrupt",
-            node: "human_review",
-            chapter_number: 1,
-            title: "旧作品污染",
+        events: [
+          {
+            id: 1,
+            job_id: "job-1",
+            sequence: 1,
+            event_type: "interrupt",
+            payload: {
+              type: "interrupt",
+              node: "human_review",
+              chapter_number: 1,
+              title: "旧作品污染",
+            },
+            created_at: "2026-08-17",
           },
-          created_at: "2026-08-17",
-        }],
+        ],
         next_after_sequence: 1,
       });
       await Promise.resolve();

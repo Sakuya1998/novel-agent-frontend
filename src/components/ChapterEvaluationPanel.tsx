@@ -32,7 +32,14 @@ const STATUS_LABELS = {
   regressed: "检测到回归",
 };
 
-export function ChapterEvaluationPanel({ versions, evaluations, disabled, onEvaluate, onSetBaseline, onCompare }: Props) {
+export function ChapterEvaluationPanel({
+  versions,
+  evaluations,
+  disabled,
+  onEvaluate,
+  onSetBaseline,
+  onCompare,
+}: Props) {
   const [versionNumber, setVersionNumber] = useState(0);
   const [includeJudge, setIncludeJudge] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -40,9 +47,10 @@ export function ChapterEvaluationPanel({ versions, evaluations, disabled, onEval
   const [error, setError] = useState("");
 
   const availableVersionNumbers = useMemo(() => {
-    const numbers = versions.length > 0
-      ? versions.map((version) => version.version_number)
-      : evaluations.map((evaluation) => evaluation.version_number);
+    const numbers =
+      versions.length > 0
+        ? versions.map((version) => version.version_number)
+        : evaluations.map((evaluation) => evaluation.version_number);
     return [...new Set(numbers)];
   }, [evaluations, versions]);
 
@@ -105,30 +113,121 @@ export function ChapterEvaluationPanel({ versions, evaluations, disabled, onEval
   }
 
   if (!versions.length && !evaluations.length) return null;
-  return <div className="chapter-evaluation">
-    <div className="block-label"><Gauge size={14} />质量评测</div>
-    <div className="evaluation-toolbar">
-      <select aria-label="评测版本" value={versionNumber} onChange={(event) => { setVersionNumber(Number(event.target.value)); setComparison(undefined); }} disabled={disabled || busy}>
-        {availableVersionNumbers.map((number) => <option value={number} key={number}>v{number}</option>)}
-      </select>
-      <select aria-label="评测模式" value={includeJudge ? "judge" : "rules"} onChange={(event) => setIncludeJudge(event.target.value === "judge")} disabled={disabled || busy}>
-        <option value="rules">规则评测</option>
-        <option value="judge">规则 + 模型</option>
-      </select>
-      <button type="button" className="evaluation-run" title="运行质量评测" aria-label="运行质量评测" onClick={runEvaluation} disabled={disabled || busy || !versionNumber}>{busy ? <LoaderCircle className="spin" size={14} /> : includeJudge ? <Sparkles size={14} /> : <Gauge size={14} />}</button>
-    </div>
-    {selected ? <>
-      <div className="evaluation-summary">
-        <strong>{selected.overall_score.toFixed(1)}</strong>
-        <div><span>综合分 / 100</span><small>{selected.judge_scores && Object.keys(selected.judge_scores).length ? `${selected.model_provider} · ${selected.model_name}` : "确定性规则"}</small></div>
-        <button type="button" title={selected.is_baseline ? "当前基准" : "设为回归基准"} aria-label={selected.is_baseline ? "当前基准" : "设为回归基准"} className={selected.is_baseline ? "active" : ""} onClick={setBaseline} disabled={disabled || busy || selected.is_baseline}><Flag size={14} /></button>
+  return (
+    <div className="chapter-evaluation">
+      <div className="block-label">
+        <Gauge size={14} />
+        质量评测
       </div>
-      <div className="evaluation-dimensions">{Object.entries(scores).map(([name, score]) => <div key={name}><span>{DIMENSION_LABELS[name] ?? name}</span><i><b style={{ width: `${Math.max(0, Math.min(100, score))}%` }} /></i><strong>{score.toFixed(0)}</strong></div>)}</div>
-      {selected.judge_error && <p className="evaluation-warning">模型评审未完成：{selected.judge_error}</p>}
-      {baseline && baseline.version_number !== versionNumber && <button type="button" className="evaluation-compare" onClick={compareWithBaseline} disabled={disabled || busy}><GitCompareArrows size={13} />与基准 v{baseline.version_number} 比较</button>}
-      {comparison && <div className={`evaluation-result ${comparison.status}`}><strong>{STATUS_LABELS[comparison.status]}</strong><span>{comparison.overall_delta > 0 ? "+" : ""}{comparison.overall_delta.toFixed(1)} 分</span></div>}
-      {selected.findings.length > 0 && <div className="evaluation-findings">{selected.findings.slice(0, 4).map((finding, index) => <p key={`${finding.message}-${index}`}>{finding.message}</p>)}</div>}
-    </> : <p className="evaluation-empty">v{versionNumber} 尚未评测</p>}
-    {error && <p className="evaluation-warning">{error}</p>}
-  </div>;
+      <div className="evaluation-toolbar">
+        <select
+          aria-label="评测版本"
+          value={versionNumber}
+          onChange={(event) => {
+            setVersionNumber(Number(event.target.value));
+            setComparison(undefined);
+          }}
+          disabled={disabled || busy}
+        >
+          {availableVersionNumbers.map((number) => (
+            <option value={number} key={number}>
+              v{number}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="评测模式"
+          value={includeJudge ? "judge" : "rules"}
+          onChange={(event) => setIncludeJudge(event.target.value === "judge")}
+          disabled={disabled || busy}
+        >
+          <option value="rules">规则评测</option>
+          <option value="judge">规则 + 模型</option>
+        </select>
+        <button
+          type="button"
+          className="evaluation-run"
+          title="运行质量评测"
+          aria-label="运行质量评测"
+          onClick={runEvaluation}
+          disabled={disabled || busy || !versionNumber}
+        >
+          {busy ? (
+            <LoaderCircle className="spin" size={14} />
+          ) : includeJudge ? (
+            <Sparkles size={14} />
+          ) : (
+            <Gauge size={14} />
+          )}
+        </button>
+      </div>
+      {selected ? (
+        <>
+          <div className="evaluation-summary">
+            <strong>{selected.overall_score.toFixed(1)}</strong>
+            <div>
+              <span>综合分 / 100</span>
+              <small>
+                {selected.judge_scores && Object.keys(selected.judge_scores).length
+                  ? `${selected.model_provider} · ${selected.model_name}`
+                  : "确定性规则"}
+              </small>
+            </div>
+            <button
+              type="button"
+              title={selected.is_baseline ? "当前基准" : "设为回归基准"}
+              aria-label={selected.is_baseline ? "当前基准" : "设为回归基准"}
+              className={selected.is_baseline ? "active" : ""}
+              onClick={setBaseline}
+              disabled={disabled || busy || selected.is_baseline}
+            >
+              <Flag size={14} />
+            </button>
+          </div>
+          <div className="evaluation-dimensions">
+            {Object.entries(scores).map(([name, score]) => (
+              <div key={name}>
+                <span>{DIMENSION_LABELS[name] ?? name}</span>
+                <i>
+                  <b style={{ width: `${Math.max(0, Math.min(100, score))}%` }} />
+                </i>
+                <strong>{score.toFixed(0)}</strong>
+              </div>
+            ))}
+          </div>
+          {selected.judge_error && <p className="evaluation-warning">模型评审未完成：{selected.judge_error}</p>}
+          {baseline && baseline.version_number !== versionNumber && (
+            <button
+              type="button"
+              className="evaluation-compare"
+              onClick={compareWithBaseline}
+              disabled={disabled || busy}
+            >
+              <GitCompareArrows size={13} />
+              与基准 v{baseline.version_number} 比较
+            </button>
+          )}
+          {comparison && (
+            <div className={`evaluation-result ${comparison.status}`}>
+              <strong>{STATUS_LABELS[comparison.status]}</strong>
+              <span>
+                {comparison.overall_delta > 0 ? "+" : ""}
+                {comparison.overall_delta.toFixed(1)} 分
+              </span>
+            </div>
+          )}
+          {selected.findings.length > 0 && (
+            <div className="evaluation-findings">
+              {selected.findings.slice(0, 4).map((finding, index) => (
+                <p key={`${finding.message}-${index}`}>{finding.message}</p>
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        <p className="evaluation-empty">v{versionNumber} 尚未评测</p>
+      )}
+      {error && <p className="evaluation-warning">{error}</p>}
+    </div>
+  );
 }

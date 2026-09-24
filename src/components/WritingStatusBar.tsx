@@ -57,24 +57,39 @@ export function WritingStatusBar({
 
   let action = null;
   if (connectionStatus === "failed") {
-    action = <button className="secondary-button writing-status-action" onClick={onRetry} disabled={disabled}>
-      <RotateCcw size={14} />重新连接
-    </button>;
+    action = (
+      <button className="secondary-button writing-status-action" onClick={onRetry} disabled={disabled}>
+        <RotateCcw size={14} />
+        重新连接
+      </button>
+    );
   } else if (status === "running") {
-    action = <button className="secondary-button stop-run-button writing-status-action" onClick={onCancel} disabled={disabled || stopping}>
-      <Square size={14} />{stopping ? "正在停止" : "停止运行"}
-    </button>;
+    action = (
+      <button
+        className="secondary-button stop-run-button writing-status-action"
+        onClick={onCancel}
+        disabled={disabled || stopping}
+      >
+        <Square size={14} />
+        {stopping ? "正在停止" : "停止运行"}
+      </button>
+    );
   } else if (["idle", "interrupted", "error"].includes(status)) {
-    action = <button className="primary-button writing-status-action" onClick={onRun} disabled={disabled}>
-      {status === "idle" ? "开始创作" : "继续运行"}<ArrowUpRight size={15} />
-    </button>;
+    action = (
+      <button className="primary-button writing-status-action" onClick={onRun} disabled={disabled}>
+        {status === "idle" ? "开始创作" : "继续运行"}
+        <ArrowUpRight size={15} />
+      </button>
+    );
   }
 
   return (
     <section className={`writing-status-bar status-${status}`} aria-label="创作状态">
       <div className="writing-status-progress">
         <span>章节进度</span>
-        <strong>第 {currentChapter} / {totalChapters} 章</strong>
+        <strong>
+          第 {currentChapter} / {totalChapters} 章
+        </strong>
       </div>
       <div className="writing-status-summary">
         <span>{copy.label}</span>
@@ -86,7 +101,9 @@ export function WritingStatusBar({
       </div>
       <div className="writing-status-connection">
         <span className={`status-dot ${connectionStatus}`} aria-hidden="true" />
-        <span role="status" aria-live="polite">{CONNECTION_COPY[connectionStatus]}</span>
+        <span role="status" aria-live="polite">
+          {CONNECTION_COPY[connectionStatus]}
+        </span>
       </div>
       <div className="writing-status-command">{action}</div>
     </section>

@@ -45,7 +45,8 @@ if (result.status !== 0) process.exit(result.status ?? 1);
 
 if (process.argv.includes("--check")) {
   const currentOperations = await readFile(operationMapPath, "utf8");
-  if (currentOperations !== generatedOperations) throw new Error("Generated operation map is stale; run npm run generate:api");
+  if (currentOperations !== generatedOperations)
+    throw new Error("Generated operation map is stale; run pnpm run generate:api");
   process.stdout.write(`Validated ${operationEntries.length} API operations and generated types.\n`);
 } else {
   await writeFile(operationMapPath, generatedOperations, "utf8");

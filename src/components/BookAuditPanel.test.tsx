@@ -34,7 +34,13 @@ describe("BookAuditPanel", () => {
   });
 
   it("shows a degraded-mode warning", () => {
-    render(<BookAuditPanel report={{ ...report, judge_scores: {}, judge_error: "模型终审失败:TimeoutError" }} totalChapters={2} onStartRevision={vi.fn()} />);
+    render(
+      <BookAuditPanel
+        report={{ ...report, judge_scores: {}, judge_error: "模型终审失败:TimeoutError" }}
+        totalChapters={2}
+        onStartRevision={vi.fn()}
+      />,
+    );
 
     expect(screen.getByRole("status")).toHaveTextContent("模型终审失败:TimeoutError");
   });

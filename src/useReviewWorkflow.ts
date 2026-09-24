@@ -47,69 +47,76 @@ export function useReviewWorkflow({ novelId, chapterNumber, onSubmit }: UseRevie
     setFocusRequest(0);
   }, [novelId, chapterNumber]);
 
-  const runAction = useCallback(async (
-    action: Exclude<ReviewBusyAction, "">,
-    command: () => Promise<void>,
-    onSuccess?: () => void,
-    propagateError = false,
-  ) => {
-    if (busyActionRef.current) return;
+  const runAction = useCallback(
+    async (
+      action: Exclude<ReviewBusyAction, "">,
+      command: () => Promise<void>,
+      onSuccess?: () => void,
+      propagateError = false,
+    ) => {
+      if (busyActionRef.current) return;
 
-    const scopeVersion = scopeVersionRef.current;
-    busyActionRef.current = action;
-    setBusyAction(action);
-    setError("");
-    try {
-      await command();
-      if (scopeVersion !== scopeVersionRef.current) return;
-      onSuccess?.();
-    } catch (reason) {
-      if (scopeVersion === scopeVersionRef.current) setError(submissionError(reason));
-      if (propagateError && scopeVersion === scopeVersionRef.current) throw reason;
-    } finally {
-      if (scopeVersion === scopeVersionRef.current && busyActionRef.current === action) {
-        busyActionRef.current = "";
-        setBusyAction("");
+      const scopeVersion = scopeVersionRef.current;
+      busyActionRef.current = action;
+      setBusyAction(action);
+      setError("");
+      try {
+        await command();
+        if (scopeVersion !== scopeVersionRef.current) return;
+        onSuccess?.();
+      } catch (reason) {
+        if (scopeVersion === scopeVersionRef.current) setError(submissionError(reason));
+        if (propagateError && scopeVersion === scopeVersionRef.current) throw reason;
+      } finally {
+        if (scopeVersion === scopeVersionRef.current && busyActionRef.current === action) {
+          busyActionRef.current = "";
+          setBusyAction("");
+        }
       }
-    }
-  }, []);
+    },
+    [],
+  );
 
-  const submit = useCallback((
-    review: ReviewSubmission,
-    action: Exclude<ReviewBusyAction, "">,
-    replacesDraft: boolean,
-    propagateError = false,
-    onReplaced?: () => void,
-  ) => {
-    const editVersion = editVersionRef.current;
-    return runAction(action, () => onSubmit(review), () => {
-      if (replacesDraft && editVersion === editVersionRef.current) {
-        updateFeedback("");
-        setSceneNumber(undefined);
-        setFocusRequest((request) => request + 1);
-        onReplaced?.();
-      }
-    }, propagateError);
-  }, [onSubmit, runAction]);
+  const submit = useCallback(
+    (
+      review: ReviewSubmission,
+      action: Exclude<ReviewBusyAction, "">,
+      replacesDraft: boolean,
+      propagateError = false,
+      onReplaced?: () => void,
+    ) => {
+      const editVersion = editVersionRef.current;
+      return runAction(
+        action,
+        () => onSubmit(review),
+        () => {
+          if (replacesDraft && editVersion === editVersionRef.current) {
+            updateFeedback("");
+            setSceneNumber(undefined);
+            setFocusRequest((request) => request + 1);
+            onReplaced?.();
+          }
+        },
+        propagateError,
+      );
+    },
+    [onSubmit, runAction],
+  );
 
   const submitRevision = useCallback(
     () => submit({ feedback: feedback.trim(), scene_number: sceneNumber }, "revision", true),
     [feedback, sceneNumber, submit],
   );
 
-  const approve = useCallback(
-    () => submit({ feedback: "approve" }, "approve", false),
+  const approve = useCallback(() => submit({ feedback: "approve" }, "approve", false), [submit]);
+
+  const replaceDraft = useCallback(
+    (review: ReviewSubmission, onReplaced?: () => void) => {
+      const action = review.candidate_id ? "candidate" : review.version_number !== undefined ? "restore" : "revision";
+      return submit(review, action, true, true, onReplaced);
+    },
     [submit],
   );
-
-  const replaceDraft = useCallback((review: ReviewSubmission, onReplaced?: () => void) => {
-    const action = review.candidate_id
-      ? "candidate"
-      : review.version_number !== undefined
-        ? "restore"
-        : "revision";
-    return submit(review, action, true, true, onReplaced);
-  }, [submit]);
 
   return {
     activeTab,

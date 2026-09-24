@@ -5,16 +5,18 @@ import { createDefaultCreativeBrief } from "../creativeBrief";
 import type { CreativeBriefVersion } from "../types";
 import { CreativeBriefDialog } from "./CreativeBriefDialog";
 
-const versions: CreativeBriefVersion[] = [{
-  id: 1,
-  novel_id: "novel-1",
-  version_number: 1,
-  source: "created",
-  change_summary: "初始创作约束",
-  content_hash: "hash",
-  created_at: "2026-08-18T09:00:00",
-  creative_brief: createDefaultCreativeBrief(),
-}];
+const versions: CreativeBriefVersion[] = [
+  {
+    id: 1,
+    novel_id: "novel-1",
+    version_number: 1,
+    source: "created",
+    change_summary: "初始创作约束",
+    content_hash: "hash",
+    created_at: "2026-08-18T09:00:00",
+    creative_brief: createDefaultCreativeBrief(),
+  },
+];
 
 describe("CreativeBriefDialog", () => {
   afterEach(() => cleanup());
@@ -45,12 +47,15 @@ describe("CreativeBriefDialog", () => {
     await user.click(screen.getByRole("button", { name: "保存约束" }));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
-    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
-      target_audience: "硬核推理读者",
-      point_of_view: "first_person",
-      themes: ["身份", "记忆"],
-      intensity: expect.objectContaining({ mystery: 5 }),
-    }), "强化第一人称约束");
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        target_audience: "硬核推理读者",
+        point_of_view: "first_person",
+        themes: ["身份", "记忆"],
+        intensity: expect.objectContaining({ mystery: 5 }),
+      }),
+      "强化第一人称约束",
+    );
   });
 
   it("keeps every field read-only while a run is active", () => {

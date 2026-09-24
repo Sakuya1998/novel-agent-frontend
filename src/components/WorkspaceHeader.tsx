@@ -105,7 +105,10 @@ export function WorkspaceHeader({
         <strong>{projectTitle || "作品库"}</strong>
       </div>
       <div className="topbar-actions">
-        <span className={`connection-pill ${serviceStatus}`} role="status"><span className={`status-dot ${serviceStatus}`} />{serviceLabels[serviceStatus]}</span>
+        <span className={`connection-pill ${serviceStatus}`} role="status">
+          <span className={`status-dot ${serviceStatus}`} />
+          {serviceLabels[serviceStatus]}
+        </span>
         {onRefresh && (
           <button className="icon-button" title="刷新当前作品" aria-label="刷新当前作品" onClick={onRefresh}>
             <RefreshCw size={16} />
@@ -121,28 +124,73 @@ export function WorkspaceHeader({
             onKeyDown={openToolsWithKeyboard}
             onClick={() => setToolsOpen((value) => !value)}
           >
-            <Wrench size={15} />工具
+            <Wrench size={15} />
+            工具
           </button>
           {toolsOpen && (
             <div className="tool-menu-popover" id="workspace-tool-menu" role="menu" aria-label="工作区工具">
               <span className="menu-label">工作区</span>
-              <button role="menuitem" onClick={() => run(onOpenMonitoring)}><ShieldCheck size={16} /><span><strong>运行与审计</strong><small>服务状态、任务和审计日志</small></span></button>
-              <button role="menuitem" onClick={() => run(onOpenBenchmarks)}><FlaskConical size={16} /><span><strong>质量评测</strong><small>运行并比较评测基准</small></span></button>
-              <button role="menuitem" onClick={() => run(onOpenImportExport)}><Download size={16} /><span><strong>导入与导出</strong><small>迁移作品或生成归档</small></span></button>
-              {projectTitle && <button role="menuitem" onClick={() => run(onOpenTraces)}><Activity size={16} /><span><strong>模型调用轨迹</strong><small>查看当前作品的调用明细</small></span></button>}
+              <button role="menuitem" onClick={() => run(onOpenMonitoring)}>
+                <ShieldCheck size={16} />
+                <span>
+                  <strong>运行与审计</strong>
+                  <small>服务状态、任务和审计日志</small>
+                </span>
+              </button>
+              <button role="menuitem" onClick={() => run(onOpenBenchmarks)}>
+                <FlaskConical size={16} />
+                <span>
+                  <strong>质量评测</strong>
+                  <small>运行并比较评测基准</small>
+                </span>
+              </button>
+              <button role="menuitem" onClick={() => run(onOpenImportExport)}>
+                <Download size={16} />
+                <span>
+                  <strong>导入与导出</strong>
+                  <small>迁移作品或生成归档</small>
+                </span>
+              </button>
+              {projectTitle && (
+                <button role="menuitem" onClick={() => run(onOpenTraces)}>
+                  <Activity size={16} />
+                  <span>
+                    <strong>模型调用轨迹</strong>
+                    <small>查看当前作品的调用明细</small>
+                  </span>
+                </button>
+              )}
               <div className="menu-separator" />
-              <button role="menuitem" onClick={() => run(onOpenSettings)}><Settings size={16} /><span><strong>模型设置</strong><small>配置模型档案与路由</small></span></button>
+              <button role="menuitem" onClick={() => run(onOpenSettings)}>
+                <Settings size={16} />
+                <span>
+                  <strong>模型设置</strong>
+                  <small>配置模型档案与路由</small>
+                </span>
+              </button>
             </div>
           )}
         </div>
-        {authEnabled === false ? <div className="account-button account-status" title="本地工作区">
-          <span className="account-avatar"><Monitor size={15} /></span>
-          <span>本地工作区</span>
-        </div> : null}
-        {authEnabled === true ? <button className="account-button" onClick={onOpenAuth} title={authUser ? `${userLabel} · ${authUser.role}` : "登录工作区"}>
-          <span className="account-avatar"><UserRound size={15} /></span>
-          <span>{userLabel}</span>
-        </button> : null}
+        {authEnabled === false ? (
+          <div className="account-button account-status" title="本地工作区">
+            <span className="account-avatar">
+              <Monitor size={15} />
+            </span>
+            <span>本地工作区</span>
+          </div>
+        ) : null}
+        {authEnabled === true ? (
+          <button
+            className="account-button"
+            onClick={onOpenAuth}
+            title={authUser ? `${userLabel} · ${authUser.role}` : "登录工作区"}
+          >
+            <span className="account-avatar">
+              <UserRound size={15} />
+            </span>
+            <span>{userLabel}</span>
+          </button>
+        ) : null}
       </div>
     </header>
   );

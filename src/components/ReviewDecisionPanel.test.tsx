@@ -7,16 +7,18 @@ import { ReviewDecisionPanel } from "./ReviewDecisionPanel";
 
 afterEach(cleanup);
 
-const scenePlan: ScenePlanItem[] = [{
-  scene_number: 2,
-  goal: "摆脱追兵",
-  conflict: "道路封锁",
-  turn: "进入暗巷",
-  location: "长街",
-  characters: ["林寒"],
-  emotion: "急迫",
-  estimated_words: 600,
-}];
+const scenePlan: ScenePlanItem[] = [
+  {
+    scene_number: 2,
+    goal: "摆脱追兵",
+    conflict: "道路封锁",
+    turn: "进入暗巷",
+    location: "长街",
+    characters: ["林寒"],
+    emotion: "急迫",
+    estimated_words: 600,
+  },
+];
 
 function renderPanel(overrides: Partial<React.ComponentProps<typeof ReviewDecisionPanel>> = {}) {
   const props: React.ComponentProps<typeof ReviewDecisionPanel> = {

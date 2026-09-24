@@ -8,8 +8,24 @@ import { ChapterEvaluationPanel } from "./ChapterEvaluationPanel";
 afterEach(cleanup);
 
 const versions = [
-  { id: 1, chapter_number: 1, version_number: 1, source: "initial", word_count: 100, preview: "旧", created_at: "2026-08-17" },
-  { id: 2, chapter_number: 1, version_number: 2, source: "revision", word_count: 110, preview: "新", created_at: "2026-08-17" },
+  {
+    id: 1,
+    chapter_number: 1,
+    version_number: 1,
+    source: "initial",
+    word_count: 100,
+    preview: "旧",
+    created_at: "2026-08-17",
+  },
+  {
+    id: 2,
+    chapter_number: 1,
+    version_number: 2,
+    source: "revision",
+    word_count: 110,
+    preview: "新",
+    created_at: "2026-08-17",
+  },
 ];
 
 function evaluation(overrides: Partial<ChapterEvaluation>): ChapterEvaluation {
@@ -37,14 +53,16 @@ function evaluation(overrides: Partial<ChapterEvaluation>): ChapterEvaluation {
 describe("ChapterEvaluationPanel", () => {
   it("runs the selected model-assisted evaluation", async () => {
     const onEvaluate = vi.fn().mockResolvedValue(evaluation({ version_number: 2 }));
-    render(<ChapterEvaluationPanel
-      versions={versions}
-      evaluations={[]}
-      disabled={false}
-      onEvaluate={onEvaluate}
-      onSetBaseline={vi.fn()}
-      onCompare={vi.fn()}
-    />);
+    render(
+      <ChapterEvaluationPanel
+        versions={versions}
+        evaluations={[]}
+        disabled={false}
+        onEvaluate={onEvaluate}
+        onSetBaseline={vi.fn()}
+        onCompare={vi.fn()}
+      />,
+    );
 
     await userEvent.selectOptions(screen.getByRole("combobox", { name: "评测模式" }), "judge");
     await userEvent.click(screen.getByRole("button", { name: "运行质量评测" }));
@@ -66,14 +84,16 @@ describe("ChapterEvaluationPanel", () => {
       regression_threshold: 3,
       dimensions: {},
     });
-    render(<ChapterEvaluationPanel
-      versions={versions}
-      evaluations={[candidate, baseline]}
-      disabled={false}
-      onEvaluate={vi.fn()}
-      onSetBaseline={onSetBaseline}
-      onCompare={onCompare}
-    />);
+    render(
+      <ChapterEvaluationPanel
+        versions={versions}
+        evaluations={[candidate, baseline]}
+        disabled={false}
+        onEvaluate={vi.fn()}
+        onSetBaseline={onSetBaseline}
+        onCompare={onCompare}
+      />,
+    );
 
     await userEvent.click(screen.getByRole("button", { name: "与基准 v1 比较" }));
     expect(onCompare).toHaveBeenCalledWith(1, 2);

@@ -40,12 +40,26 @@ describe("WritingStatusBar", () => {
   });
 
   it.each([undefined, ""])("shows a placeholder when both node sources are empty (%s)", (lastNode) => {
-    render(<WritingStatusBar {...defaultProps} status="running" job={{ ...runningJob, current_node: "" }} lastNode={lastNode} />);
+    render(
+      <WritingStatusBar
+        {...defaultProps}
+        status="running"
+        job={{ ...runningJob, current_node: "" }}
+        lastNode={lastNode}
+      />,
+    );
     expect(screen.getByText("准备中")).toBeInTheDocument();
   });
 
   it("falls back to the last event node when the persisted node is empty", () => {
-    render(<WritingStatusBar {...defaultProps} status="running" job={{ ...runningJob, current_node: "" }} lastNode="scene_writer" />);
+    render(
+      <WritingStatusBar
+        {...defaultProps}
+        status="running"
+        job={{ ...runningJob, current_node: "" }}
+        lastNode="scene_writer"
+      />,
+    );
     expect(screen.getByText("场景写作")).toBeInTheDocument();
   });
 
@@ -61,10 +75,13 @@ describe("WritingStatusBar", () => {
     expect(screen.getAllByRole("button")).toHaveLength(1);
   });
 
-  it.each(["human_review", "blueprint_review", "scene_review", "completed", "legacy_read_only"] as const)("has no run command for %s", (status) => {
-    render(<WritingStatusBar {...defaultProps} status={status} />);
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
-  });
+  it.each(["human_review", "blueprint_review", "scene_review", "completed", "legacy_read_only"] as const)(
+    "has no run command for %s",
+    (status) => {
+      render(<WritingStatusBar {...defaultProps} status={status} />);
+      expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    },
+  );
 
   it("resumes errors and respects disabled commands", () => {
     render(<WritingStatusBar {...defaultProps} status="error" disabled />);
@@ -73,13 +90,15 @@ describe("WritingStatusBar", () => {
 
   it("shows the current node and stop action while running", async () => {
     const onCancel = vi.fn();
-    render(<WritingStatusBar
-      {...defaultProps}
-      status="running"
-      job={runningJob}
-      connectionStatus="polling"
-      onCancel={onCancel}
-    />);
+    render(
+      <WritingStatusBar
+        {...defaultProps}
+        status="running"
+        job={runningJob}
+        connectionStatus="polling"
+        onCancel={onCancel}
+      />,
+    );
 
     expect(screen.getByText("第 2 / 8 章")).toBeInTheDocument();
     expect(screen.getByText(/场景写作/)).toBeInTheDocument();
@@ -88,12 +107,7 @@ describe("WritingStatusBar", () => {
   });
 
   it("announces reconnecting without replacing the last known node", () => {
-    render(<WritingStatusBar
-      {...defaultProps}
-      status="running"
-      job={runningJob}
-      connectionStatus="reconnecting"
-    />);
+    render(<WritingStatusBar {...defaultProps} status="running" job={runningJob} connectionStatus="reconnecting" />);
 
     expect(screen.getByRole("status")).toHaveTextContent("连接中断，正在恢复");
     expect(screen.getByText(/场景写作/)).toBeInTheDocument();
@@ -101,13 +115,15 @@ describe("WritingStatusBar", () => {
 
   it("offers one retry action when automatic reconnection has failed", async () => {
     const onRetry = vi.fn();
-    render(<WritingStatusBar
-      {...defaultProps}
-      status="running"
-      job={runningJob}
-      connectionStatus="failed"
-      onRetry={onRetry}
-    />);
+    render(
+      <WritingStatusBar
+        {...defaultProps}
+        status="running"
+        job={runningJob}
+        connectionStatus="failed"
+        onRetry={onRetry}
+      />,
+    );
 
     expect(screen.getAllByRole("button")).toHaveLength(1);
     await userEvent.click(screen.getByRole("button", { name: "重新连接" }));
@@ -116,20 +132,12 @@ describe("WritingStatusBar", () => {
 
   it("uses a single run action for resumable statuses", async () => {
     const onRun = vi.fn();
-    const { rerender } = render(<WritingStatusBar
-      {...defaultProps}
-      status="idle"
-      onRun={onRun}
-    />);
+    const { rerender } = render(<WritingStatusBar {...defaultProps} status="idle" onRun={onRun} />);
 
     expect(screen.getAllByRole("button")).toHaveLength(1);
     await userEvent.click(screen.getByRole("button", { name: "开始创作" }));
 
-    rerender(<WritingStatusBar
-      {...defaultProps}
-      status="interrupted"
-      onRun={onRun}
-    />);
+    rerender(<WritingStatusBar {...defaultProps} status="interrupted" onRun={onRun} />);
     expect(screen.getAllByRole("button")).toHaveLength(1);
     await userEvent.click(screen.getByRole("button", { name: "继续运行" }));
     expect(onRun).toHaveBeenCalledTimes(2);

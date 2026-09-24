@@ -41,25 +41,36 @@ describe("NovelSidebar creative brief", () => {
     await user.click(screen.getByRole("button", { name: /开始创作/ }));
 
     await waitFor(() => expect(onCreate).toHaveBeenCalledTimes(1));
-    expect(onCreate).toHaveBeenCalledWith(expect.objectContaining({
-      title: "雾中剑",
-      inspiration: "失忆剑客追查王印谜案",
-      creative_brief: expect.objectContaining({
-        target_audience: "硬核推理读者",
-        age_rating: "teen",
-        point_of_view: "first_person",
-        ending_tone: "bittersweet",
-        themes: ["身份", "记忆"],
-        must_include: ["公平线索", "代价"],
-        avoid_content: ["无依据反转"],
-        intensity: expect.objectContaining({ mystery: 5 }),
+    expect(onCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "雾中剑",
+        inspiration: "失忆剑客追查王印谜案",
+        creative_brief: expect.objectContaining({
+          target_audience: "硬核推理读者",
+          age_rating: "teen",
+          point_of_view: "first_person",
+          ending_tone: "bittersweet",
+          themes: ["身份", "记忆"],
+          must_include: ["公平线索", "代价"],
+          avoid_content: ["无依据反转"],
+          intensity: expect.objectContaining({ mystery: 5 }),
+        }),
       }),
-    }));
+    );
   });
 
   it("keeps the dialog open and announces creation failures", async () => {
     const user = userEvent.setup();
-    render(<NovelSidebar novels={[]} isLoading={false} isStreaming={false} onSelect={vi.fn()} onCreate={vi.fn().mockRejectedValue(new Error("标题已存在"))} onDelete={vi.fn()} />);
+    render(
+      <NovelSidebar
+        novels={[]}
+        isLoading={false}
+        isStreaming={false}
+        onSelect={vi.fn()}
+        onCreate={vi.fn().mockRejectedValue(new Error("标题已存在"))}
+        onDelete={vi.fn()}
+      />,
+    );
 
     await user.click(screen.getByRole("button", { name: "新建作品" }));
     await user.type(screen.getByLabelText("标题"), "重复作品");
@@ -75,7 +86,17 @@ describe("NovelSidebar creative brief", () => {
     const onSelect = vi.fn();
     const onDelete = vi.fn().mockResolvedValue(undefined);
     vi.spyOn(window, "confirm").mockReturnValue(true);
-    render(<NovelSidebar novels={[{ id: "novel-1", title: "孤城", genre: "武侠", total_chapters: 3, chapters: [] } as never]} selectedId="novel-1" isLoading={false} isStreaming={false} onSelect={onSelect} onCreate={vi.fn()} onDelete={onDelete} />);
+    render(
+      <NovelSidebar
+        novels={[{ id: "novel-1", title: "孤城", genre: "武侠", total_chapters: 3, chapters: [] } as never]}
+        selectedId="novel-1"
+        isLoading={false}
+        isStreaming={false}
+        onSelect={onSelect}
+        onCreate={vi.fn()}
+        onDelete={onDelete}
+      />,
+    );
 
     await user.click(screen.getByRole("button", { name: "打开《孤城》" }));
     expect(onSelect).toHaveBeenCalledWith("novel-1");

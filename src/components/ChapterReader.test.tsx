@@ -27,13 +27,15 @@ const draftWithScenes: Draft = {
 
 describe("ChapterReader", () => {
   it("renders scene drafts as addressable manuscript sections", () => {
-    render(<ChapterReader
-      draft={draftWithScenes}
-      chapters={[]}
-      status="human_review"
-      selectedSceneNumber={2}
-      focusRequest={0}
-    />);
+    render(
+      <ChapterReader
+        draft={draftWithScenes}
+        chapters={[]}
+        status="human_review"
+        selectedSceneNumber={2}
+        focusRequest={0}
+      />,
+    );
 
     expect(screen.getByTestId("scene-1")).toHaveTextContent("第一场正文");
     expect(screen.getByTestId("scene-1")).toHaveAttribute("data-scene-number", "1");
@@ -46,21 +48,25 @@ describe("ChapterReader", () => {
       configurable: true,
       value: scrollIntoView,
     });
-    const view = render(<ChapterReader
-      draft={draftWithScenes}
-      chapters={[]}
-      status="human_review"
-      selectedSceneNumber={2}
-      focusRequest={0}
-    />);
+    const view = render(
+      <ChapterReader
+        draft={draftWithScenes}
+        chapters={[]}
+        status="human_review"
+        selectedSceneNumber={2}
+        focusRequest={0}
+      />,
+    );
 
-    view.rerender(<ChapterReader
-      draft={draftWithScenes}
-      chapters={[]}
-      status="human_review"
-      selectedSceneNumber={2}
-      focusRequest={1}
-    />);
+    view.rerender(
+      <ChapterReader
+        draft={draftWithScenes}
+        chapters={[]}
+        status="human_review"
+        selectedSceneNumber={2}
+        focusRequest={1}
+      />,
+    );
 
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
     expect(scrollIntoView).toHaveBeenCalledOnce();
@@ -70,8 +76,18 @@ describe("ChapterReader", () => {
   it("focuses manuscript top on an explicit top request", () => {
     const scrollIntoView = vi.fn();
     Object.defineProperty(Element.prototype, "scrollIntoView", { configurable: true, value: scrollIntoView });
-    const view = render(<ChapterReader draft={draftWithScenes} chapters={[]} status="human_review" selectedSceneNumber={2} focusRequest={0} />);
-    view.rerender(<ChapterReader draft={draftWithScenes} chapters={[]} status="human_review" focusTarget="top" focusRequest={1} />);
+    const view = render(
+      <ChapterReader
+        draft={draftWithScenes}
+        chapters={[]}
+        status="human_review"
+        selectedSceneNumber={2}
+        focusRequest={0}
+      />,
+    );
+    view.rerender(
+      <ChapterReader draft={draftWithScenes} chapters={[]} status="human_review" focusTarget="top" focusRequest={1} />,
+    );
     expect(screen.getByRole("article")).toHaveFocus();
     expect(screen.getByTestId("scene-2")).not.toHaveAttribute("aria-current");
     expect(scrollIntoView).toHaveBeenCalledExactlyOnceWith({ behavior: "smooth", block: "start" });
@@ -79,11 +95,7 @@ describe("ChapterReader", () => {
   });
 
   it("keeps rendering aggregate content when scene drafts are absent", () => {
-    render(<ChapterReader
-      draft={{ chapter_number: 1, content: "旧版完整正文" }}
-      chapters={[]}
-      status="complete"
-    />);
+    render(<ChapterReader draft={{ chapter_number: 1, content: "旧版完整正文" }} chapters={[]} status="complete" />);
 
     expect(screen.getByText("旧版完整正文")).toHaveClass("manuscript-content");
   });

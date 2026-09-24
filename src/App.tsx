@@ -30,7 +30,8 @@ import { isReadOnly } from "./permissions/permissions";
 import type { CanonOperation } from "./types";
 import "./book-audit.css";
 
-type DialogName = "settings" | "canon" | "brief" | "traces" | "benchmarks" | "auth" | "memory" | "transfer" | "monitoring";
+type DialogName =
+  "settings" | "canon" | "brief" | "traces" | "benchmarks" | "auth" | "memory" | "transfer" | "monitoring";
 
 function statusLabel(status?: string) {
   const labels: Record<string, string> = {
@@ -52,7 +53,11 @@ function errorCopy(error: string) {
   return error;
 }
 
-interface AppProps { initialNovelId?: string; initialView?: WorkspaceView; initialDialog?: DialogName; }
+interface AppProps {
+  initialNovelId?: string;
+  initialView?: WorkspaceView;
+  initialDialog?: DialogName;
+}
 
 function App({ initialNovelId, initialView, initialDialog }: AppProps) {
   const session = useSession();
@@ -67,7 +72,11 @@ function App({ initialNovelId, initialView, initialDialog }: AppProps) {
   const [createOpen, setCreateOpen] = useState(false);
   const { novel, state, error, isStreaming, lastNode } = workbench;
   useEffect(() => {
-    if (initialNovelId && workbench.novels.some((item) => item.id === initialNovelId) && workbench.selectedId !== initialNovelId) {
+    if (
+      initialNovelId &&
+      workbench.novels.some((item) => item.id === initialNovelId) &&
+      workbench.selectedId !== initialNovelId
+    ) {
       workbench.setSelectedId(initialNovelId);
     }
   }, [initialNovelId, workbench.novels, workbench.selectedId]);
@@ -91,8 +100,10 @@ function App({ initialNovelId, initialView, initialDialog }: AppProps) {
   });
   const { runAction } = reviewWorkflow;
   const { updateCanon } = workbench;
-  const applyCanon = useCallback((operation: CanonOperation) =>
-    runAction("canon", () => updateCanon(operation), undefined, true), [runAction, updateCanon]);
+  const applyCanon = useCallback(
+    (operation: CanonOperation) => runAction("canon", () => updateCanon(operation), undefined, true),
+    [runAction, updateCanon],
+  );
   const creativeBrief = novel?.creative_brief ?? state?.creative_brief;
   const planningReview = state?.status === "blueprint_review" || state?.status === "scene_review";
 
@@ -120,7 +131,11 @@ function App({ initialNovelId, initialView, initialDialog }: AppProps) {
   }
 
   function openBenchmarks() {
-    if (workbench.selectedId) { setActiveDialog("benchmarks"); window.history.pushState({}, "", `/novels/${encodeURIComponent(workbench.selectedId)}/tools/benchmarks`); window.dispatchEvent(new PopStateEvent("popstate")); }
+    if (workbench.selectedId) {
+      setActiveDialog("benchmarks");
+      window.history.pushState({}, "", `/novels/${encodeURIComponent(workbench.selectedId)}/tools/benchmarks`);
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    }
     setActiveDialog("benchmarks");
     void workbench.loadEvaluationBenchmarks();
   }
@@ -131,7 +146,11 @@ function App({ initialNovelId, initialView, initialDialog }: AppProps) {
   }
 
   function openTraces() {
-    if (workbench.selectedId) { setActiveDialog("traces"); window.history.pushState({}, "", `/novels/${encodeURIComponent(workbench.selectedId)}/tools/traces`); window.dispatchEvent(new PopStateEvent("popstate")); }
+    if (workbench.selectedId) {
+      setActiveDialog("traces");
+      window.history.pushState({}, "", `/novels/${encodeURIComponent(workbench.selectedId)}/tools/traces`);
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    }
     setActiveDialog("traces");
     void workbench.loadModelTraces();
   }
@@ -178,75 +197,206 @@ function App({ initialNovelId, initialView, initialDialog }: AppProps) {
           onOpenSettings={() => openSettingsPage("models")}
           onRefresh={workbench.selectedId ? () => window.location.reload() : undefined}
         />
-        {error ? <div className="global-error" role="alert" aria-live="assertive"><AlertCircle size={16} /><span>{errorCopy(error)}</span><button type="button" onClick={() => window.location.reload()}>重试</button></div> : null}
+        {error ? (
+          <div className="global-error" role="alert" aria-live="assertive">
+            <AlertCircle size={16} />
+            <span>{errorCopy(error)}</span>
+            <button type="button" onClick={() => window.location.reload()}>
+              重试
+            </button>
+          </div>
+        ) : null}
 
         {!novel || !state ? (
-          <EmptyWorkspace serviceStatus={serviceStatus} onCreate={() => setCreateOpen(true)} onImport={() => setActiveDialog("transfer")} onSettings={() => setActiveDialog("settings")} />
+          <EmptyWorkspace
+            serviceStatus={serviceStatus}
+            onCreate={() => setCreateOpen(true)}
+            onImport={() => setActiveDialog("transfer")}
+            onSettings={() => setActiveDialog("settings")}
+          />
         ) : (
           <>
             <ProjectOverview novel={novel} state={state} statusLabel={statusLabel(state.status)} />
             <StageRail lastNode={lastNode} status={state.status} currentPhase={state.current_phase} />
-            <WorkspaceNav active={workspaceView} status={state.status} issueCount={state.conflicts?.length || state.issues.length} onChange={changeWorkspaceView} />
+            <WorkspaceNav
+              active={workspaceView}
+              status={state.status}
+              issueCount={state.conflicts?.length || state.issues.length}
+              onChange={changeWorkspaceView}
+            />
 
-            {state.replan_proposal?.status === "replanned" ? <div className="replan-callout" role="status"><GitBranch size={16} /><div><strong>后续大纲已调整</strong><span>{state.replan_proposal.rationale || "系统根据最新定稿更新了未来章节。"}</span></div></div> : null}
-            {state.replan_proposal?.status === "error" ? <div className="replan-callout warning" role="status"><AlertCircle size={16} /><div><strong>后续大纲保持不变</strong><span>{state.replan_proposal.rationale || "重规划未应用，当前大纲继续有效。"}</span></div></div> : null}
+            {state.replan_proposal?.status === "replanned" ? (
+              <div className="replan-callout" role="status">
+                <GitBranch size={16} />
+                <div>
+                  <strong>后续大纲已调整</strong>
+                  <span>{state.replan_proposal.rationale || "系统根据最新定稿更新了未来章节。"}</span>
+                </div>
+              </div>
+            ) : null}
+            {state.replan_proposal?.status === "error" ? (
+              <div className="replan-callout warning" role="status">
+                <AlertCircle size={16} />
+                <div>
+                  <strong>后续大纲保持不变</strong>
+                  <span>{state.replan_proposal.rationale || "重规划未应用，当前大纲继续有效。"}</span>
+                </div>
+              </div>
+            ) : null}
 
-            {workspaceView === "plan" ? planningReview ? (
-              <PlanningReviewPanel
-                reviewScope={`${novel.id}:${state.status}:${state.current_chapter}`}
-                reviewNode={state.status as "blueprint_review" | "scene_review"}
-                worldBible={state.world_bible ?? ""}
-                characters={state.characters ?? []}
-                outline={state.outline ?? []}
-                scenePlan={state.scene_plan ?? []}
-                planningVersions={state.planning_versions ?? []}
-                disabled={isStreaming || readOnly}
-                onSubmit={workbench.resume}
-                onLoadVersion={workbench.loadPlanningVersion}
-                onCompareVersions={workbench.comparePlanningVersions}
+            {workspaceView === "plan" ? (
+              planningReview ? (
+                <PlanningReviewPanel
+                  reviewScope={`${novel.id}:${state.status}:${state.current_chapter}`}
+                  reviewNode={state.status as "blueprint_review" | "scene_review"}
+                  worldBible={state.world_bible ?? ""}
+                  characters={state.characters ?? []}
+                  outline={state.outline ?? []}
+                  scenePlan={state.scene_plan ?? []}
+                  planningVersions={state.planning_versions ?? []}
+                  disabled={isStreaming || readOnly}
+                  onSubmit={workbench.resume}
+                  onLoadVersion={workbench.loadPlanningVersion}
+                  onCompareVersions={workbench.comparePlanningVersions}
+                />
+              ) : (
+                <PlanningWorkspace state={state} />
+              )
+            ) : null}
+
+            {workspaceView === "knowledge" ? (
+              <KnowledgeWorkspace
+                novel={novel}
+                state={state}
+                onOpenBrief={() => !readOnly && openNovelTool("brief")}
+                onOpenCanon={() => !readOnly && openNovelTool("canon")}
+                onOpenMemory={() => openNovelTool("memory")}
               />
-            ) : <PlanningWorkspace state={state} /> : null}
+            ) : null}
 
-            {workspaceView === "knowledge" ? <KnowledgeWorkspace novel={novel} state={state} onOpenBrief={() => !readOnly && openNovelTool("brief")} onOpenCanon={() => !readOnly && openNovelTool("canon")} onOpenMemory={() => openNovelTool("memory")} /> : null}
+            {workspaceView === "quality" ? (
+              state.status === "completed" && state.book_audit ? (
+                <div className="workspace-book-audit">
+                  <BookAuditPanel
+                    report={state.book_audit}
+                    totalChapters={state.total_chapters}
+                    disabled={isStreaming || readOnly}
+                    onStartRevision={readOnly ? async () => undefined : workbench.startBookRevision}
+                  />
+                </div>
+              ) : (
+                <QualityWorkspace
+                  state={state}
+                  onOpenMonitoring={() => setActiveDialog("monitoring")}
+                  onOpenBenchmarks={openBenchmarks}
+                  onOpenTraces={openTraces}
+                />
+              )
+            ) : null}
 
-            {workspaceView === "quality" ? state.status === "completed" && state.book_audit ? (
-              <div className="workspace-book-audit"><BookAuditPanel report={state.book_audit} totalChapters={state.total_chapters} disabled={isStreaming || readOnly} onStartRevision={readOnly ? async () => undefined : workbench.startBookRevision} /></div>
-            ) : <QualityWorkspace state={state} onOpenMonitoring={() => setActiveDialog("monitoring")} onOpenBenchmarks={openBenchmarks} onOpenTraces={openTraces} /> : null}
-
-            {workspaceView === "write" ? <WritingWorkspace
-              novel={novel}
-              state={state}
-              readerFocus={readerFocus}
-              onReaderFocusChange={setReaderFocus}
-              connectionStatus={workbench.connectionStatus}
-              lastNode={lastNode}
-              isStreaming={isStreaming}
-              onRun={readOnly ? async () => undefined : workbench.run}
-              onCancel={workbench.cancelJob}
-              onRetry={workbench.retryRunConnection}
-              reviewWorkflow={reviewWorkflow}
-              onApplyCanon={readOnly ? async () => undefined : workbench.updateCanon}
-              onGenerateCandidates={readOnly ? async () => undefined : workbench.generateCandidates}
-              onCompareVersions={workbench.compareVersions}
-              onEvaluateVersion={workbench.evaluateVersion}
-              onSetEvaluationBaseline={workbench.setEvaluationBaseline}
-              onCompareEvaluations={workbench.compareEvaluations}
-              onOpenPlanning={() => changeWorkspaceView("plan")}
-              onOpenQuality={() => changeWorkspaceView("quality")}
-            /> : null}
+            {workspaceView === "write" ? (
+              <WritingWorkspace
+                novel={novel}
+                state={state}
+                readerFocus={readerFocus}
+                onReaderFocusChange={setReaderFocus}
+                connectionStatus={workbench.connectionStatus}
+                lastNode={lastNode}
+                isStreaming={isStreaming}
+                onRun={readOnly ? async () => undefined : workbench.run}
+                onCancel={workbench.cancelJob}
+                onRetry={workbench.retryRunConnection}
+                reviewWorkflow={reviewWorkflow}
+                onApplyCanon={readOnly ? async () => undefined : workbench.updateCanon}
+                onGenerateCandidates={readOnly ? async () => undefined : workbench.generateCandidates}
+                onCompareVersions={workbench.compareVersions}
+                onEvaluateVersion={workbench.evaluateVersion}
+                onSetEvaluationBaseline={workbench.setEvaluationBaseline}
+                onCompareEvaluations={workbench.compareEvaluations}
+                onOpenPlanning={() => changeWorkspaceView("plan")}
+                onOpenQuality={() => changeWorkspaceView("quality")}
+              />
+            ) : null}
           </>
         )}
       </main>
 
-      <CanonDialog open={activeDialog === "canon"} embedded={initialDialog === "canon"} novelId={workbench.selectedId} editable={state?.status === "human_review"} disabled={isStreaming || Boolean(reviewWorkflow.busyAction)} currentChapter={state?.current_chapter} scenePlan={state?.current_draft.scene_plan} onClose={closeDialog} onSubmit={applyCanon} />
-      <CreativeBriefDialog open={activeDialog === "brief"} embedded={initialDialog === "brief"} brief={creativeBrief} version={novel?.creative_brief_version ?? state?.creative_brief_version} versions={workbench.creativeBriefVersions} disabled={isStreaming} onClose={closeDialog} onSubmit={workbench.updateBrief} />
-      <ModelTraceDialog open={activeDialog === "traces"} embedded={initialDialog === "traces"} traces={workbench.modelTraces} onRefresh={workbench.loadModelTraces} onClose={closeDialog} />
-      <EvaluationBenchmarkDialog open={activeDialog === "benchmarks"} embedded={initialDialog === "benchmarks"} runs={workbench.evaluationBenchmarks} onRun={workbench.runBenchmark} onClose={closeDialog} />
-      <MemoryQualityDialog open={activeDialog === "memory"} embedded={initialDialog === "memory"} history={workbench.memoryQuality} onRefresh={workbench.loadMemoryQuality} onEvaluate={workbench.runMemoryQuality} onRebuild={workbench.rebuildMemoryIndex} onClose={closeDialog} />
-      <ImportExportDialog open={activeDialog === "transfer"} novelTitle={novel?.title ?? ""} onClose={() => setActiveDialog(undefined)} onExport={workbench.exportNovel} onImport={workbench.importNovel} />
-      <AuthDialog open={authEnabled === true && activeDialog === "auth"} currentUser={authUser} onLogin={async (identifier, password) => { const result = await session.login(identifier, password); setActiveDialog(undefined); return result; }} onRegister={async (payload) => { const result = await session.register(payload); setActiveDialog(undefined); return result; }} onLogout={async () => { await session.logout(); setActiveDialog(undefined); }} onClose={() => setActiveDialog(undefined)} />
+      <CanonDialog
+        open={activeDialog === "canon"}
+        embedded={initialDialog === "canon"}
+        novelId={workbench.selectedId}
+        editable={state?.status === "human_review"}
+        disabled={isStreaming || Boolean(reviewWorkflow.busyAction)}
+        currentChapter={state?.current_chapter}
+        scenePlan={state?.current_draft.scene_plan}
+        onClose={closeDialog}
+        onSubmit={applyCanon}
+      />
+      <CreativeBriefDialog
+        open={activeDialog === "brief"}
+        embedded={initialDialog === "brief"}
+        brief={creativeBrief}
+        version={novel?.creative_brief_version ?? state?.creative_brief_version}
+        versions={workbench.creativeBriefVersions}
+        disabled={isStreaming}
+        onClose={closeDialog}
+        onSubmit={workbench.updateBrief}
+      />
+      <ModelTraceDialog
+        open={activeDialog === "traces"}
+        embedded={initialDialog === "traces"}
+        traces={workbench.modelTraces}
+        onRefresh={workbench.loadModelTraces}
+        onClose={closeDialog}
+      />
+      <EvaluationBenchmarkDialog
+        open={activeDialog === "benchmarks"}
+        embedded={initialDialog === "benchmarks"}
+        runs={workbench.evaluationBenchmarks}
+        onRun={workbench.runBenchmark}
+        onClose={closeDialog}
+      />
+      <MemoryQualityDialog
+        open={activeDialog === "memory"}
+        embedded={initialDialog === "memory"}
+        history={workbench.memoryQuality}
+        onRefresh={workbench.loadMemoryQuality}
+        onEvaluate={workbench.runMemoryQuality}
+        onRebuild={workbench.rebuildMemoryIndex}
+        onClose={closeDialog}
+      />
+      <ImportExportDialog
+        open={activeDialog === "transfer"}
+        novelTitle={novel?.title ?? ""}
+        onClose={() => setActiveDialog(undefined)}
+        onExport={workbench.exportNovel}
+        onImport={workbench.importNovel}
+      />
+      <AuthDialog
+        open={authEnabled === true && activeDialog === "auth"}
+        currentUser={authUser}
+        onLogin={async (identifier, password) => {
+          const result = await session.login(identifier, password);
+          setActiveDialog(undefined);
+          return result;
+        }}
+        onRegister={async (payload) => {
+          const result = await session.register(payload);
+          setActiveDialog(undefined);
+          return result;
+        }}
+        onLogout={async () => {
+          await session.logout();
+          setActiveDialog(undefined);
+        }}
+        onClose={() => setActiveDialog(undefined)}
+      />
       <MonitoringDialog open={activeDialog === "monitoring"} onClose={() => setActiveDialog(undefined)} />
-      <ModelSettingsDialog open={activeDialog === "settings"} isStreaming={isStreaming} onClose={() => setActiveDialog(undefined)} />
+      <ModelSettingsDialog
+        open={activeDialog === "settings"}
+        isStreaming={isStreaming}
+        onClose={() => setActiveDialog(undefined)}
+      />
     </div>
   );
 }

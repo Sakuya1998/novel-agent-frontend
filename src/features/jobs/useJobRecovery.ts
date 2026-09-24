@@ -7,16 +7,22 @@ export function useJobRecovery(job: RunJob | null | undefined, onRecovered?: (ne
   const [error, setError] = useState("");
   const recover = useCallback(async () => {
     if (!job) return null;
-    setRecovering(true); setError("");
+    setRecovering(true);
+    setError("");
     try {
       const result = await getRunJobEvents(job.id, 0);
       onRecovered?.(result.job);
       return result.job;
     } catch (reason) {
       const message = reason instanceof Error ? reason.message : "无法恢复后台任务";
-      setError(message); throw reason;
-    } finally { setRecovering(false); }
+      setError(message);
+      throw reason;
+    } finally {
+      setRecovering(false);
+    }
   }, [job, onRecovered]);
-  useEffect(() => { if (job && ["queued", "running"].includes(job.status)) void recover().catch(() => undefined); }, [job?.id]);
+  useEffect(() => {
+    if (job && ["queued", "running"].includes(job.status)) void recover().catch(() => undefined);
+  }, [job?.id]);
   return { recover, recovering, error };
 }

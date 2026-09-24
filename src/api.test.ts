@@ -9,36 +9,73 @@ describe("model settings API errors", () => {
   });
 
   it("formats Pydantic validation details instead of showing object text", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
-      detail: [{ loc: ["body", "base_url"], msg: "Field required", type: "missing" }],
-    }), { status: 422, headers: { "Content-Type": "application/json" } })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            detail: [{ loc: ["body", "base_url"], msg: "Field required", type: "missing" }],
+          }),
+          { status: 422, headers: { "Content-Type": "application/json" } },
+        ),
+      ),
+    );
 
-    await expect(createModelProfile({
-      name: "Custom",
-      provider: "openai_compatible",
+    await expect(
+      createModelProfile({
+        name: "Custom",
+        provider: "openai_compatible",
+        base_url: "",
+        api_key: "",
+        clear_api_key: false,
+        chat_models: [],
+        embedding_models: [],
+      }),
+    ).rejects.toThrow("base_url: Field required");
+  });
+
+  it("uses credentialed cookies and CSRF without storing or sending bearer tokens", async () => {
+    window.localStorage.clear();
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            access_token: "token-1",
+            token_type: "bearer",
+            expires_at: "2026-09-18T00:00:00Z",
+            user: {
+              id: "u1",
+              tenant_id: "t1",
+              username: "alice",
+              email: "",
+              display_name: "Alice",
+              role: "owner",
+              tenant_name: "A",
+            },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ source: "unconfigured", templates: {}, profiles: [], routes: {} }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await loginAuth("alice", "password-1");
+    document.cookie = "novel_agent_csrf=csrf-1; path=/";
+    await createModelProfile({
+      name: "X",
+      provider: "openai",
       base_url: "",
       api_key: "",
       clear_api_key: false,
       chat_models: [],
       embedding_models: [],
-    })).rejects.toThrow("base_url: Field required");
-  });
-
-  it("uses credentialed cookies and CSRF without storing or sending bearer tokens", async () => {
-    window.localStorage.clear();
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce(new Response(JSON.stringify({
-        access_token: "token-1",
-        token_type: "bearer",
-        expires_at: "2026-09-18T00:00:00Z",
-        user: { id: "u1", tenant_id: "t1", username: "alice", email: "", display_name: "Alice", role: "owner", tenant_name: "A" },
-      }), { status: 200, headers: { "Content-Type": "application/json" } }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ source: "unconfigured", templates: {}, profiles: [], routes: {} }), { status: 200, headers: { "Content-Type": "application/json" } }));
-    vi.stubGlobal("fetch", fetchMock);
-
-    await loginAuth("alice", "password-1");
-    document.cookie = "novel_agent_csrf=csrf-1; path=/";
-    await createModelProfile({ name: "X", provider: "openai", base_url: "", api_key: "", clear_api_key: false, chat_models: [], embedding_models: [] });
+    });
 
     expect(window.localStorage.getItem("novel_agent_access_token")).toBeNull();
     const loginInit = fetchMock.mock.calls[0][1] as RequestInit;
@@ -53,10 +90,18 @@ describe("model settings API errors", () => {
   it("clears stale browser sessions when authentication is disabled", async () => {
     window.localStorage.setItem("novel_agent_access_token", "stale-token");
     window.localStorage.setItem("novel_agent_auth_user", JSON.stringify({ username: "stale" }));
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
-      enabled: false,
-      user: { id: "user_local", tenant_id: "tenant_local", username: "local" },
-    }), { status: 200, headers: { "Content-Type": "application/json" } })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            enabled: false,
+            user: { id: "user_local", tenant_id: "tenant_local", username: "local" },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      ),
+    );
 
     await expect(getAuthStatus()).resolves.toMatchObject({ enabled: false });
 
@@ -65,12 +110,31 @@ describe("model settings API errors", () => {
   });
 
   it("polls a background export and downloads the completed file", async () => {
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce(new Response(JSON.stringify({ job: { id: "transfer-1" } }), { status: 202, headers: { "Content-Type": "application/json" } }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ id: "transfer-1", status: "completed", result: { filename: "book.zip" }, error: "" }), { status: 200, headers: { "Content-Type": "application/json" } }))
-      .mockResolvedValueOnce(new Response(new Blob(["PK"]), { status: 200, headers: { "Content-Disposition": "attachment; filename*=UTF-8''book.zip" } }));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ job: { id: "transfer-1" } }), {
+          status: 202,
+          headers: { "Content-Type": "application/json" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ id: "transfer-1", status: "completed", result: { filename: "book.zip" }, error: "" }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(new Blob(["PK"]), {
+          status: 200,
+          headers: { "Content-Disposition": "attachment; filename*=UTF-8''book.zip" },
+        }),
+      );
     vi.stubGlobal("fetch", fetchMock);
-    vi.stubGlobal("setTimeout", (callback: TimerHandler) => { if (typeof callback === "function") callback(); return 0; });
+    vi.stubGlobal("setTimeout", (callback: TimerHandler) => {
+      if (typeof callback === "function") callback();
+      return 0;
+    });
 
     const result = await exportNovel("novel-1", "backup", "secret");
 
@@ -81,10 +145,18 @@ describe("model settings API errors", () => {
   });
 
   it("returns readiness details when the service reports not ready", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
-      status: "not_ready",
-      checks: { checkpoint: { status: "missing" }, sqlite: { status: "ok" } },
-    }), { status: 503, headers: { "Content-Type": "application/json" } })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            status: "not_ready",
+            checks: { checkpoint: { status: "missing" }, sqlite: { status: "ok" } },
+          }),
+          { status: 503, headers: { "Content-Type": "application/json" } },
+        ),
+      ),
+    );
 
     await expect(getReadiness()).resolves.toMatchObject({
       status: "not_ready",
@@ -93,10 +165,15 @@ describe("model settings API errors", () => {
   });
 
   it("rejects an invalid readiness response instead of showing a false status", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("<html>Vite fallback</html>", {
-      status: 200,
-      headers: { "Content-Type": "text/html" },
-    })));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response("<html>Vite fallback</html>", {
+          status: 200,
+          headers: { "Content-Type": "text/html" },
+        }),
+      ),
+    );
 
     await expect(getReadiness()).rejects.toThrow("就绪检查返回了无效数据");
   });
@@ -120,17 +197,24 @@ describe("model settings API errors", () => {
   });
 
   it("uses the versioned job event contract and resumes from its sequence cursor", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
-      job: { id: "job-1", novel_id: "novel-1", status: "running" },
-      events: [{
-        job_id: "job-1",
-        sequence: 7,
-        type: "node_done",
-        payload: { type: "node_done", node: "scene_writer" },
-        created_at: "2026-09-23T07:00:00Z",
-      }],
-      next_after_sequence: 7,
-    }), { status: 200, headers: { "Content-Type": "application/json" } }));
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          job: { id: "job-1", novel_id: "novel-1", status: "running" },
+          events: [
+            {
+              job_id: "job-1",
+              sequence: 7,
+              type: "node_done",
+              payload: { type: "node_done", node: "scene_writer" },
+              created_at: "2026-09-23T07:00:00Z",
+            },
+          ],
+          next_after_sequence: 7,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     const response = await getRunJobEvents("job-1", 6);

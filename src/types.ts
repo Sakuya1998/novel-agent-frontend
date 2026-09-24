@@ -1,4 +1,13 @@
-export type NovelStatus = "idle" | "running" | "interrupted" | "blueprint_review" | "scene_review" | "human_review" | "completed" | "error" | "legacy_read_only";
+export type NovelStatus =
+  | "idle"
+  | "running"
+  | "interrupted"
+  | "blueprint_review"
+  | "scene_review"
+  | "human_review"
+  | "completed"
+  | "error"
+  | "legacy_read_only";
 
 export type AgeRating = "all_ages" | "teen" | "mature";
 export type PointOfView = "first_person" | "third_limited" | "third_omniscient" | "multiple";
@@ -37,7 +46,8 @@ export interface CreativeBriefVersion {
   creative_brief: CreativeBrief;
 }
 
-export type RunJobStatus = "queued" | "running" | "waiting_review" | "completed" | "failed" | "cancelled" | "interrupted";
+export type RunJobStatus =
+  "queued" | "running" | "waiting_review" | "completed" | "failed" | "cancelled" | "interrupted";
 
 export interface RunJob {
   id: string;
@@ -251,7 +261,12 @@ export interface ChapterCandidate {
 }
 
 export type PlanningReviewSubmission =
-  | { review_type: "blueprint_review"; world_bible: string; characters: Record<string, unknown>[]; outline: Record<string, unknown>[] }
+  | {
+      review_type: "blueprint_review";
+      world_bible: string;
+      characters: Record<string, unknown>[];
+      outline: Record<string, unknown>[];
+    }
   | { review_type: "scene_review"; scene_plan: ScenePlanItem[] };
 
 export type PlanningArtifactType = "blueprint" | "scene";
@@ -517,7 +532,15 @@ export interface CanonDetail {
 }
 
 export interface CanonOperation {
-  action: "upsert_fact" | "deprecate_fact" | "confirm_fact" | "merge_alias" | "update_character" | "upsert_thread" | "update_thread_status" | "upsert_thread_beat";
+  action:
+    | "upsert_fact"
+    | "deprecate_fact"
+    | "confirm_fact"
+    | "merge_alias"
+    | "update_character"
+    | "upsert_thread"
+    | "update_thread_status"
+    | "upsert_thread_beat";
   reason: string;
   target_type?: "world_fact" | "fact";
   target_id?: string;
@@ -610,7 +633,10 @@ export interface MemoryQualityReport {
   mrr?: number;
   stale_fact_hit_rate?: number;
   canon_vector_conflict_rate?: number;
-  category_metrics?: Record<string, { case_count?: number; recall_at_k?: number; precision_at_k?: number; mrr?: number }>;
+  category_metrics?: Record<
+    string,
+    { case_count?: number; recall_at_k?: number; precision_at_k?: number; mrr?: number }
+  >;
   cases?: Record<string, unknown>[];
   errors?: string[];
 }
@@ -728,9 +754,33 @@ export interface WorkbenchState {
 export type StreamEvent =
   | { type: "job_started"; job_id: string }
   | { type: "node_done"; node: string }
-  | ({ type: "interrupt"; node: "human_review"; chapter_number?: number; title?: string; content?: string; scene_plan?: ScenePlanItem[]; issues?: ConsistencyIssue[]; instruction?: string; persistence_error?: string })
-  | ({ type: "interrupt"; node: "blueprint_review"; world_bible: string; characters: Record<string, unknown>[]; outline: Record<string, unknown>[]; instruction?: string })
-  | ({ type: "interrupt"; node: "scene_review"; chapter_number?: number; chapter_plan?: Record<string, unknown>; scene_plan: ScenePlanItem[]; instruction?: string })
+  | {
+      type: "interrupt";
+      node: "human_review";
+      chapter_number?: number;
+      title?: string;
+      content?: string;
+      scene_plan?: ScenePlanItem[];
+      issues?: ConsistencyIssue[];
+      instruction?: string;
+      persistence_error?: string;
+    }
+  | {
+      type: "interrupt";
+      node: "blueprint_review";
+      world_bible: string;
+      characters: Record<string, unknown>[];
+      outline: Record<string, unknown>[];
+      instruction?: string;
+    }
+  | {
+      type: "interrupt";
+      node: "scene_review";
+      chapter_number?: number;
+      chapter_plan?: Record<string, unknown>;
+      scene_plan: ScenePlanItem[];
+      instruction?: string;
+    }
   | { type: "end"; chapters_done: number; current_chapter?: number }
   | { type: "candidate_ready"; candidate_id: string; candidate_number: number; overall_score: number }
   | { type: "candidates_ready"; chapter_number: number; count: number }

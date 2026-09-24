@@ -1,0 +1,8 @@
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+openapi/novel-agent-v1.json
+src/api/generated/
+.git/

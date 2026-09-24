@@ -59,7 +59,9 @@ describe("MonitoringDialog", () => {
     expect(screen.getByText("运行检查点")).toBeInTheDocument();
     expect(screen.getByText("缺失")).toBeInTheDocument();
     expect(screen.getByText("POST /api/novels")).toBeInTheDocument();
-    expect(Array.from(container.querySelectorAll(".monitoring-summary strong"), (element) => element.textContent)).toEqual(["3", "3", "8", "2s"]);
+    expect(
+      Array.from(container.querySelectorAll(".monitoring-summary strong"), (element) => element.textContent),
+    ).toEqual(["3", "3", "8", "2s"]);
   });
 
   it("keeps successful sections visible when one request fails and can refresh", async () => {

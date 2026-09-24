@@ -15,7 +15,7 @@ test("cookie session survives refresh and protects the workspace", async ({ page
 
   await page.goto("/");
   const authDialog = page.getByRole("dialog", { name: "工作区身份" });
-  if (!await authDialog.isVisible().catch(() => false)) {
+  if (!(await authDialog.isVisible().catch(() => false))) {
     await page.getByTitle("登录工作区").click();
   }
   await authDialog.getByRole("button", { name: "注册工作区" }).click();
@@ -37,11 +37,12 @@ test("cookie session survives refresh and protects the workspace", async ({ page
   expect(consoleErrors).toEqual([]);
 
   const createStatus = await page.evaluate(async (title) => {
-    const csrf = document.cookie
-      .split(";")
-      .map((item) => item.trim())
-      .find((item) => item.startsWith("novel_agent_csrf="))
-      ?.split("=", 2)[1] ?? "";
+    const csrf =
+      document.cookie
+        .split(";")
+        .map((item) => item.trim())
+        .find((item) => item.startsWith("novel_agent_csrf="))
+        ?.split("=", 2)[1] ?? "";
     const response = await fetch("/api/v1/novels", {
       method: "POST",
       credentials: "include",

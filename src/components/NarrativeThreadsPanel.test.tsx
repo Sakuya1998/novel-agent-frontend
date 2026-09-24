@@ -4,24 +4,28 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NarrativeThreadsPanel } from "./NarrativeThreadsPanel";
 
-const threads = [{
-  id: "thread:seal",
-  title: "失踪王印",
-  description: "追查王印去向",
-  kind: "mystery",
-  priority: "major" as const,
-  status: "open" as const,
-  introduced_chapter: 1,
-  due_chapter: 4,
-  resolved_chapter: null,
-  beats: [{
-    id: "thread:seal:beat:1",
-    chapter: 1,
-    action: "setup" as const,
-    description: "发现空印盒",
-    status: "completed" as const,
-  }],
-}];
+const threads = [
+  {
+    id: "thread:seal",
+    title: "失踪王印",
+    description: "追查王印去向",
+    kind: "mystery",
+    priority: "major" as const,
+    status: "open" as const,
+    introduced_chapter: 1,
+    due_chapter: 4,
+    resolved_chapter: null,
+    beats: [
+      {
+        id: "thread:seal:beat:1",
+        chapter: 1,
+        action: "setup" as const,
+        description: "发现空印盒",
+        status: "completed" as const,
+      },
+    ],
+  },
+];
 
 afterEach(cleanup);
 

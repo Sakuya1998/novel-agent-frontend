@@ -36,7 +36,9 @@ describe("ImportExportDialog", () => {
   });
 
   it("renders inside a modal backdrop and disables export without a selected novel", () => {
-    const { container } = render(<ImportExportDialog open novelTitle="" onClose={vi.fn()} onExport={vi.fn()} onImport={vi.fn()} />);
+    const { container } = render(
+      <ImportExportDialog open novelTitle="" onClose={vi.fn()} onExport={vi.fn()} onImport={vi.fn()} />,
+    );
 
     expect(container.querySelector(".model-settings-backdrop")).toContainElement(screen.getByRole("dialog"));
     expect(screen.queryByRole("button", { name: "导出文件" })).not.toBeInTheDocument();

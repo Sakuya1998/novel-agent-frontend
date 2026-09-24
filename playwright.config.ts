@@ -2,16 +2,19 @@ import { defineConfig, devices } from "@playwright/test";
 import path from "node:path";
 
 const frontendRoot = import.meta.dirname;
-const runtimeProcess = (globalThis as typeof globalThis & {
-  process?: { env?: Record<string, string | undefined>; platform?: string };
-}).process;
+const runtimeProcess = (
+  globalThis as typeof globalThis & {
+    process?: { env?: Record<string, string | undefined>; platform?: string };
+  }
+).process;
 const configuredApiRoot = runtimeProcess?.env?.NOVEL_AGENT_API_ROOT;
 const apiRoot = configuredApiRoot ? path.resolve(configuredApiRoot) : undefined;
 const apiUrl = runtimeProcess?.env?.E2E_API_URL ?? "http://127.0.0.1:8765";
 const webUrl = "http://127.0.0.1:4173";
-const python = runtimeProcess?.platform === "win32"
-  ? path.join(apiRoot ?? "", ".venv", "Scripts", "python.exe")
-  : path.join(apiRoot ?? "", ".venv", "bin", "python");
+const python =
+  runtimeProcess?.platform === "win32"
+    ? path.join(apiRoot ?? "", ".venv", "Scripts", "python.exe")
+    : path.join(apiRoot ?? "", ".venv", "bin", "python");
 
 const webServers = [];
 if (apiRoot) {

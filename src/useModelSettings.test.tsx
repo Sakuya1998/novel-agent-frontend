@@ -16,7 +16,12 @@ vi.mock("./api", () => apiMocks);
 const emptySettings = {
   source: "unconfigured" as const,
   templates: {
-    openai: { label: "OpenAI", base_url: "https://api.openai.com/v1", chat_models: ["gpt-4o"], embedding_models: ["text-embedding-3-small"] },
+    openai: {
+      label: "OpenAI",
+      base_url: "https://api.openai.com/v1",
+      chat_models: ["gpt-4o"],
+      embedding_models: ["text-embedding-3-small"],
+    },
     anthropic: { label: "Anthropic", base_url: "", chat_models: [], embedding_models: [] },
     deepseek: { label: "DeepSeek", base_url: "https://api.deepseek.com", chat_models: [], embedding_models: [] },
     qwen: { label: "通义千问", base_url: "", chat_models: [], embedding_models: [] },
@@ -61,15 +66,17 @@ describe("useModelSettings", () => {
     const { result } = renderHook(() => useModelSettings(true));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    await act(() => result.current.saveProfile({
-      name: "OpenAI",
-      provider: "openai",
-      base_url: "https://api.openai.com/v1",
-      api_key: "sk-test",
-      clear_api_key: false,
-      chat_models: ["gpt-4o"],
-      embedding_models: ["text-embedding-3-small"],
-    }));
+    await act(() =>
+      result.current.saveProfile({
+        name: "OpenAI",
+        provider: "openai",
+        base_url: "https://api.openai.com/v1",
+        api_key: "sk-test",
+        clear_api_key: false,
+        chat_models: ["gpt-4o"],
+        embedding_models: ["text-embedding-3-small"],
+      }),
+    );
 
     expect(apiMocks.createModelProfile).toHaveBeenCalledOnce();
     expect(result.current.settings?.profiles[0].has_api_key).toBe(true);
@@ -77,22 +84,22 @@ describe("useModelSettings", () => {
   });
 
   it("reports a successful write followed by a failed refresh distinctly", async () => {
-    apiMocks.getModelSettings
-      .mockResolvedValueOnce(emptySettings)
-      .mockRejectedValueOnce(new Error("refresh failed"));
+    apiMocks.getModelSettings.mockResolvedValueOnce(emptySettings).mockRejectedValueOnce(new Error("refresh failed"));
     apiMocks.createModelProfile.mockResolvedValue(savedProfile);
     const { result } = renderHook(() => useModelSettings(true));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    await act(() => result.current.saveProfile({
-      name: "OpenAI",
-      provider: "openai",
-      base_url: "https://api.openai.com/v1",
-      api_key: "sk-test",
-      clear_api_key: false,
-      chat_models: ["gpt-4o"],
-      embedding_models: ["text-embedding-3-small"],
-    }));
+    await act(() =>
+      result.current.saveProfile({
+        name: "OpenAI",
+        provider: "openai",
+        base_url: "https://api.openai.com/v1",
+        api_key: "sk-test",
+        clear_api_key: false,
+        chat_models: ["gpt-4o"],
+        embedding_models: ["text-embedding-3-small"],
+      }),
+    );
 
     expect(result.current.error).toBe("refresh failed");
     expect(result.current.notice).toBe("模型服务已保存，但刷新失败，请重新打开模型设置");
@@ -106,15 +113,17 @@ describe("useModelSettings", () => {
     });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    await act(() => result.current.saveProfile({
-      name: "OpenAI",
-      provider: "openai",
-      base_url: "https://api.openai.com/v1",
-      api_key: "sk-test",
-      clear_api_key: false,
-      chat_models: ["gpt-4o"],
-      embedding_models: ["text-embedding-3-small"],
-    }));
+    await act(() =>
+      result.current.saveProfile({
+        name: "OpenAI",
+        provider: "openai",
+        base_url: "https://api.openai.com/v1",
+        api_key: "sk-test",
+        clear_api_key: false,
+        chat_models: ["gpt-4o"],
+        embedding_models: ["text-embedding-3-small"],
+      }),
+    );
     expect(result.current.notice).toBe("模型服务已保存");
 
     rerender({ open: false });

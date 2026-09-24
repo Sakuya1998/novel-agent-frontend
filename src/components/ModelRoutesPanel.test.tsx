@@ -97,11 +97,13 @@ describe("ModelRoutesPanel", () => {
     await userEvent.selectOptions(screen.getAllByLabelText("备用模型服务")[0], "fallback");
     await userEvent.click(screen.getByRole("button", { name: "保存模型分工" }));
 
-    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
-      creative: expect.objectContaining({
-        fallback_profile_id: "fallback",
-        fallback_model_name: "claude-sonnet-4-5",
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        creative: expect.objectContaining({
+          fallback_profile_id: "fallback",
+          fallback_model_name: "claude-sonnet-4-5",
+        }),
       }),
-    }));
+    );
   });
 });

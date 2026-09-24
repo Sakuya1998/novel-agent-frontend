@@ -20,7 +20,11 @@ describe("AppErrorBoundary", () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     vi.stubGlobal("reportError", vi.fn());
 
-    render(<AppErrorBoundary onReset={onReset}><BrokenView /></AppErrorBoundary>);
+    render(
+      <AppErrorBoundary onReset={onReset}>
+        <BrokenView />
+      </AppErrorBoundary>,
+    );
 
     expect(screen.getByRole("alert")).toHaveTextContent("工作台暂时无法显示");
     await user.click(screen.getByRole("button", { name: "重新加载工作台" }));

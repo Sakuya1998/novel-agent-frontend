@@ -1,9 +1,26 @@
 import type { AuthRole } from "../types";
 
-export type Permission = "workspace:read" | "workspace:manage" | "members:manage" | "resources:read" | "resources:manage" | "novels:read" | "novels:write" | "jobs:start";
+export type Permission =
+  | "workspace:read"
+  | "workspace:manage"
+  | "members:manage"
+  | "resources:read"
+  | "resources:manage"
+  | "novels:read"
+  | "novels:write"
+  | "jobs:start";
 
 const rolePermissions: Record<AuthRole, readonly Permission[]> = {
-  owner: ["workspace:read", "workspace:manage", "members:manage", "resources:read", "resources:manage", "novels:read", "novels:write", "jobs:start"],
+  owner: [
+    "workspace:read",
+    "workspace:manage",
+    "members:manage",
+    "resources:read",
+    "resources:manage",
+    "novels:read",
+    "novels:write",
+    "jobs:start",
+  ],
   editor: ["workspace:read", "resources:read", "novels:read", "novels:write", "jobs:start"],
   viewer: ["workspace:read", "resources:read", "novels:read"],
 };
