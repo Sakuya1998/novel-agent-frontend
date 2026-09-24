@@ -4,6 +4,7 @@ import App from "../App";
 import { LoginPage } from "../pages/auth/LoginPage";
 import { RegisterPage } from "../pages/auth/RegisterPage";
 import { WorkspaceOverviewPage } from "../pages/workspaces/WorkspaceOverviewPage";
+import { SettingsPage, type SettingsSection } from "../pages/settings/SettingsPage";
 import type { WorkspaceView } from "../components/WorkspaceNav";
 
 const NOVEL_VIEWS = ["overview", "write", "plan", "knowledge", "quality"] as const;
@@ -39,6 +40,8 @@ export function AppRouter() {
   if (path.startsWith("/app/workspaces/") && path.endsWith("/overview")) return <WorkspaceOverviewPage onNavigate={go} />;
   const novelRoute = parseNovelRoute(path);
   if (novelRoute) return <App initialNovelId={novelRoute.novelId} initialView={novelRoute.view === "overview" ? "write" : novelRoute.view} />;
+  const settingsMatch = path.match(/^\/settings\/(models|resources|audit)\/?$/);
+  if (settingsMatch) return <SettingsPage section={settingsMatch[1] as SettingsSection} onBack={() => go("/app")} />;
   return <App />;
 }
 

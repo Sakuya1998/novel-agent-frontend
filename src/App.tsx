@@ -119,6 +119,11 @@ function App({ initialNovelId, initialView = "write" }: AppProps) {
     void workbench.loadEvaluationBenchmarks();
   }
 
+  function openSettingsPage(section: "models" | "resources" | "audit") {
+    window.history.pushState({}, "", `/settings/${section}`);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }
+
   function openTraces() {
     setActiveDialog("traces");
     void workbench.loadModelTraces();
@@ -146,11 +151,11 @@ function App({ initialNovelId, initialView = "write" }: AppProps) {
           authEnabled={authEnabled}
           authUser={authUser}
           onOpenAuth={() => setActiveDialog("auth")}
-          onOpenMonitoring={() => setActiveDialog("monitoring")}
+          onOpenMonitoring={() => openSettingsPage("audit")}
           onOpenBenchmarks={openBenchmarks}
-          onOpenImportExport={() => setActiveDialog("transfer")}
+          onOpenImportExport={() => openSettingsPage("resources")}
           onOpenTraces={openTraces}
-          onOpenSettings={() => setActiveDialog("settings")}
+          onOpenSettings={() => openSettingsPage("models")}
           onRefresh={workbench.selectedId ? () => window.location.reload() : undefined}
         />
         {error ? <div className="global-error" role="alert" aria-live="assertive"><AlertCircle size={16} /><span>{errorCopy(error)}</span><button type="button" onClick={() => window.location.reload()}>重试</button></div> : null}
