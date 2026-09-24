@@ -61,6 +61,12 @@ export function NovelSidebar({ novels, selectedId, isLoading, isStreaming, delet
   }, [workspace?.id]);
   const publishedStyles = resources.styles ?? [];
   const publishedTypes = resources["content-types"] ?? [];
+  const publishedTemplates = resources["creative-templates"] ?? [];
+  const publishedPolicies = resources["quality-policies"] ?? [];
+  const [templateId, setTemplateId] = useState("");
+  const [policyId, setPolicyId] = useState("");
+  const [styleResourceId, setStyleResourceId] = useState("");
+  const [contentTypeResourceId, setContentTypeResourceId] = useState("");
   function setIsCreating(open: boolean) {
     if (createOpen === undefined) setInternalCreating(open);
     onCreateOpenChange?.(open);
@@ -100,6 +106,10 @@ export function NovelSidebar({ novels, selectedId, isLoading, isStreaming, delet
         inspiration: inspiration.trim(),
         total_chapters: totalChapters,
         style,
+        content_type_resource_id: contentTypeResourceId || publishedTypes.find((item) => item.key === genre)?.id,
+        style_resource_id: styleResourceId || publishedStyles.find((item) => item.key === style)?.id,
+        creative_template_id: templateId || undefined,
+        quality_policy_id: policyId || undefined,
         planning_review_enabled: planningReviewEnabled,
         creative_brief: {
           ...creativeBrief,
@@ -149,6 +159,8 @@ export function NovelSidebar({ novels, selectedId, isLoading, isStreaming, delet
           <label>类型<select value={genre} onChange={(event) => setGenre(event.target.value)}>{publishedTypes.length ? publishedTypes.map((item) => <option key={item.id} value={item.key}>{item.name}</option>) : <option>武侠</option>}</select></label>
           <label>章节数<input type="number" min="1" max="50" value={totalChapters} onChange={(event) => setTotalChapters(Number(event.target.value))} /></label>
           <label>叙事风格<select value={style} onChange={(event) => setStyle(event.target.value)}>{publishedStyles.length ? publishedStyles.map((item) => <option key={item.id} value={item.key}>{item.name}</option>) : <option value="jin_yong">金庸</option>}</select></label>
+          {publishedTemplates.length ? <label>创作模板<select value={templateId} onChange={(event) => setTemplateId(event.target.value)}><option value="">不使用模板</option>{publishedTemplates.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label> : null}
+          {publishedPolicies.length ? <label>质量策略<select value={policyId} onChange={(event) => setPolicyId(event.target.value)}><option value="">默认策略</option>{publishedPolicies.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label> : null}
           <label className="new-novel-wide">一句话灵感<textarea value={inspiration} onChange={(event) => setInspiration(event.target.value)} placeholder="一个失忆的剑客在雾都寻找过去……" rows={3} required /></label>
           </div>
           <details className="creative-brief-fields">
