@@ -6,6 +6,8 @@ import { RegisterPage } from "../pages/auth/RegisterPage";
 import { WorkspaceOverviewPage } from "../pages/workspaces/WorkspaceOverviewPage";
 import { SettingsPage, type SettingsSection } from "../pages/settings/SettingsPage";
 import type { WorkspaceView } from "../components/WorkspaceNav";
+import { ResourcesPage } from "../pages/settings/ResourcesPage";
+import type { ResourceKind } from "../features/resources/resourceSchemas";
 
 const NOVEL_VIEWS = ["overview", "write", "plan", "knowledge", "quality"] as const;
 export type NovelRouteView = typeof NOVEL_VIEWS[number];
@@ -42,6 +44,8 @@ export function AppRouter() {
   if (novelRoute) return <App initialNovelId={novelRoute.novelId} initialView={novelRoute.view === "overview" ? "write" : novelRoute.view} />;
   const settingsMatch = path.match(/^\/settings\/(models|resources|audit)\/?$/);
   if (settingsMatch) return <SettingsPage section={settingsMatch[1] as SettingsSection} onBack={() => go("/app")} />;
+  const resourcesMatch = path.match(/^\/settings\/resources\/(content-types|styles|creative-templates|quality-policies)\/?$/);
+  if (resourcesMatch) return <ResourcesPage kind={resourcesMatch[1] as ResourceKind} onBack={() => go("/settings/resources")} />;
   return <App />;
 }
 
