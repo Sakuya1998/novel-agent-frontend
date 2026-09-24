@@ -1,7 +1,10 @@
 import { readFile, writeFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { spawnSync } from "node:child_process";
 
 const schemaPath = new URL("../openapi/novel-agent-v1.json", import.meta.url);
 const generatedPath = new URL("../src/api/generated/schema.d.ts", import.meta.url);
+const operationMapPath = new URL("../src/api/generated/operations.ts", import.meta.url);
 const schema = JSON.parse(await readFile(schemaPath, "utf8"));
 
 const requiredOperations = [
@@ -21,13 +24,30 @@ if (missing.length) {
   throw new Error(`OpenAPI is missing job operations: ${missing.join(", ")}`);
 }
 
-const current = await readFile(generatedPath, "utf8");
+const operationEntries = [];
+for (const [path, methods] of Object.entries(schema.paths ?? {})) {
+  for (const [method, operation] of Object.entries(methods ?? {})) {
+    if (typeof operation?.operationId !== "string") continue;
+    operationEntries.push([operation.operationId, { path, method: method.toUpperCase() }]);
+  }
+}
+operationEntries.sort(([left], [right]) => left.localeCompare(right));
+const generatedOperations = `// Generated from openapi/novel-agent-v1.json. Do not edit.\nexport const operationDefinitions = ${JSON.stringify(Object.fromEntries(operationEntries), null, 2)} as const;\n`;
+
+const cliPath = new URL("../node_modules/openapi-typescript/bin/cli.js", import.meta.url);
+const args = [fileURLToPath(cliPath), fileURLToPath(schemaPath), "-o", fileURLToPath(generatedPath)];
+if (process.argv.includes("--check")) args.push("--check");
+
+const result = spawnSync(process.execPath, args, { cwd: new URL("..", import.meta.url), encoding: "utf8" });
+if (result.stdout) process.stdout.write(result.stdout);
+if (result.stderr) process.stderr.write(result.stderr);
+if (result.status !== 0) process.exit(result.status ?? 1);
+
 if (process.argv.includes("--check")) {
-  const hasEventEnvelope = current.includes("next_after_sequence: number")
-    && current.includes('"Idempotency-Key"?: string')
-    && current.includes("get_run_job_events_api_jobs__job_id__events_getV1");
-  if (!hasEventEnvelope) throw new Error("Generated API types are stale; run npm run generate:api");
-  process.stdout.write("Generated API types match the versioned job contract.\n");
+  const currentOperations = await readFile(operationMapPath, "utf8");
+  if (currentOperations !== generatedOperations) throw new Error("Generated operation map is stale; run npm run generate:api");
+  process.stdout.write(`Validated ${operationEntries.length} API operations and generated types.\n`);
 } else {
-  process.stdout.write(`Validated ${requiredOperations.length} public job operations.\n`);
+  await writeFile(operationMapPath, generatedOperations, "utf8");
+  process.stdout.write(`Generated OpenAPI types and ${operationEntries.length} operation definitions.\n`);
 }

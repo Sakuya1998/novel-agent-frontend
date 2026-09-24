@@ -1,6 +1,6 @@
 import { AlertCircle, GitBranch } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { getAuthStatus, loginAuth, logoutAuth, registerAuth } from "./api";
+import { useSession } from "./auth/SessionProvider";
 import { AuthDialog } from "./components/AuthDialog";
 import { BookAuditPanel } from "./components/BookAuditPanel";
 import { CanonDialog } from "./components/CanonDialog";
@@ -51,8 +51,9 @@ function errorCopy(error: string) {
 }
 
 function App() {
-  const [authEnabled, setAuthEnabled] = useState<boolean>();
-  const [authUser, setAuthUser] = useState<Awaited<ReturnType<typeof getAuthStatus>>["user"]>(null);
+  const session = useSession();
+  const authEnabled = session.status === "loading" ? undefined : session.enabled;
+  const authUser = session.user;
   const workbench = useWorkbench(authEnabled === false || (authEnabled === true && authUser !== null));
   const serviceStatus = useServiceStatus();
   const [activeDialog, setActiveDialog] = useState<DialogName>();
@@ -71,21 +72,6 @@ function App() {
     runAction("canon", () => updateCanon(operation), undefined, true), [runAction, updateCanon]);
   const creativeBrief = novel?.creative_brief ?? state?.creative_brief;
   const planningReview = state?.status === "blueprint_review" || state?.status === "scene_review";
-
-  useEffect(() => {
-    let active = true;
-    void getAuthStatus()
-      .then((status) => {
-        if (!active) return;
-        setAuthEnabled(status.enabled);
-        setAuthUser(status.enabled ? status.user : null);
-        if (!status.enabled) setActiveDialog((current) => current === "auth" ? undefined : current);
-      })
-      .catch(() => {
-        if (active) setAuthEnabled(undefined);
-      });
-    return () => { active = false; };
-  }, []);
 
   useEffect(() => {
     if (authEnabled === true && (error.includes("需要登录") || error.includes("会话无效"))) setActiveDialog("auth");
@@ -200,7 +186,7 @@ function App() {
       <EvaluationBenchmarkDialog open={activeDialog === "benchmarks"} runs={workbench.evaluationBenchmarks} onRun={workbench.runBenchmark} onClose={() => setActiveDialog(undefined)} />
       <MemoryQualityDialog open={activeDialog === "memory"} history={workbench.memoryQuality} onRefresh={workbench.loadMemoryQuality} onEvaluate={workbench.runMemoryQuality} onRebuild={workbench.rebuildMemoryIndex} onClose={() => setActiveDialog(undefined)} />
       <ImportExportDialog open={activeDialog === "transfer"} novelTitle={novel?.title ?? ""} onClose={() => setActiveDialog(undefined)} onExport={workbench.exportNovel} onImport={workbench.importNovel} />
-      <AuthDialog open={authEnabled === true && activeDialog === "auth"} currentUser={authUser} onLogin={async (identifier, password) => { const session = await loginAuth(identifier, password); setAuthUser(session.user); setActiveDialog(undefined); return session; }} onRegister={async (payload) => { const session = await registerAuth(payload); setAuthUser(session.user); setActiveDialog(undefined); return session; }} onLogout={async () => { await logoutAuth(); setAuthUser(null); setActiveDialog(undefined); }} onClose={() => setActiveDialog(undefined)} />
+      <AuthDialog open={authEnabled === true && activeDialog === "auth"} currentUser={authUser} onLogin={async (identifier, password) => { const result = await session.login(identifier, password); setActiveDialog(undefined); return result; }} onRegister={async (payload) => { const result = await session.register(payload); setActiveDialog(undefined); return result; }} onLogout={async () => { await session.logout(); setActiveDialog(undefined); }} onClose={() => setActiveDialog(undefined)} />
       <MonitoringDialog open={activeDialog === "monitoring"} onClose={() => setActiveDialog(undefined)} />
       <ModelSettingsDialog open={activeDialog === "settings"} isStreaming={isStreaming} onClose={() => setActiveDialog(undefined)} />
     </div>

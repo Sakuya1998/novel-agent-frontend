@@ -554,6 +554,10 @@ export function getRunJobEvents(
   );
 }
 
+export function listWorkspaces(): Promise<{ items: Array<{ id: string; name: string; role?: string }>; has_more: boolean; next_cursor: string | null }> {
+  return request("/api/v1/workspaces");
+}
+
 export function cancelRunJob(jobId: string): Promise<RunJob> {
   return request(`/api/v1/jobs/${encodeURIComponent(jobId)}/cancel`, { method: "POST" });
 }

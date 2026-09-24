@@ -13,7 +13,8 @@ Vite 默认将 `/api`、`/healthz` 和 `/readyz` 代理到 `http://127.0.0.1:800
 
 ```powershell
 npm run check
-npm run test:e2e
 ```
+
+浏览器 E2E 需要一个可用的 API 仓库 checkout。设置 `NOVEL_AGENT_API_ROOT` 指向后端仓库后，再运行 `npm run test:e2e`；不设置时 Playwright 只会启动前端，不会假装拥有后端服务。
 
 `openapi/novel-agent-v1.json` 是前端仓库使用的 API 契约基线。后端变更需更新该 artifact 并运行 `npm run generate:api`，CI 会校验 job operation 和派生类型。
