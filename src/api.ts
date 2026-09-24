@@ -423,6 +423,10 @@ export function runEvaluationBenchmark(
 
 export type CreateNovelPayload = Pick<Novel, "title" | "genre" | "inspiration" | "total_chapters" | "style" | "planning_review_enabled"> & {
   creative_brief: CreativeBrief;
+  content_type_resource_id?: string;
+  style_resource_id?: string;
+  creative_template_id?: string;
+  quality_policy_id?: string;
 };
 
 export function createNovel(payload: CreateNovelPayload): Promise<Novel> {

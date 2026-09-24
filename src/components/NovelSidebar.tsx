@@ -1,6 +1,6 @@
 import { BookOpen, LoaderCircle, Plus, SlidersHorizontal, Sparkles, Trash2, X } from "lucide-react";
 import type { FormEvent } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { CreateNovelPayload } from "../api";
 import {
   AGE_RATING_LABELS,
@@ -13,6 +13,8 @@ import {
 import type { CreativeBrief, Novel } from "../types";
 import { useDialogLifecycle } from "../useDialogLifecycle";
 import type { ServiceStatus } from "../useServiceStatus";
+import { useWorkspace } from "../workspaces/WorkspaceProvider";
+import { listPublishedResources, type Resource } from "../features/resources/resourceSchemas";
 
 interface Props {
   novels: Novel[];
@@ -37,6 +39,8 @@ function splitBriefList(value: string, limit: number): string[] {
 }
 
 export function NovelSidebar({ novels, selectedId, isLoading, isStreaming, deletingId, serviceStatus = "checking", createOpen, onCreateOpenChange, onSelect, onCreate, onDelete }: Props) {
+  const { workspace } = useWorkspace();
+  const [resources, setResources] = useState<Record<string, Resource[]>>({});
   const [internalCreating, setInternalCreating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createError, setCreateError] = useState("");
@@ -51,6 +55,12 @@ export function NovelSidebar({ novels, selectedId, isLoading, isStreaming, delet
   const [mustInclude, setMustInclude] = useState("");
   const [avoidContent, setAvoidContent] = useState("");
   const isCreating = createOpen ?? internalCreating;
+  useEffect(() => {
+    if (!workspace) return;
+    void Promise.all((["content-types", "styles", "creative-templates", "quality-policies"] as const).map(async (kind) => [kind, await listPublishedResources(workspace.id, kind)] as const)).then((entries) => setResources(Object.fromEntries(entries))).catch(() => undefined);
+  }, [workspace?.id]);
+  const publishedStyles = resources.styles ?? [];
+  const publishedTypes = resources["content-types"] ?? [];
   function setIsCreating(open: boolean) {
     if (createOpen === undefined) setInternalCreating(open);
     onCreateOpenChange?.(open);
@@ -136,9 +146,9 @@ export function NovelSidebar({ novels, selectedId, isLoading, isStreaming, delet
           <div className="new-novel-header"><div><span className="eyebrow">NEW PROJECT</span><h2 id="new-novel-title">创建一部新作品</h2></div><button type="button" className="icon-button" title="关闭" aria-label="关闭" disabled={isSubmitting} onClick={() => { setIsCreating(false); setCreateError(""); }}><X size={17} /></button></div>
           <div className="new-novel-grid">
           <label>标题<input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="雾中剑" required /></label>
-          <label>类型<select value={genre} onChange={(event) => setGenre(event.target.value)}><option>武侠</option><option>仙侠</option><option>科幻</option><option>悬疑</option><option>都市</option><option>历史</option></select></label>
+          <label>类型<select value={genre} onChange={(event) => setGenre(event.target.value)}>{publishedTypes.length ? publishedTypes.map((item) => <option key={item.id} value={item.key}>{item.name}</option>) : <option>武侠</option>}</select></label>
           <label>章节数<input type="number" min="1" max="50" value={totalChapters} onChange={(event) => setTotalChapters(Number(event.target.value))} /></label>
-          <label>叙事风格<select value={style} onChange={(event) => setStyle(event.target.value)}><option value="jin_yong">金庸</option><option value="gu_long">古龙</option><option value="murakami">村上春树</option><option value="yu_hua">余华</option></select></label>
+          <label>叙事风格<select value={style} onChange={(event) => setStyle(event.target.value)}>{publishedStyles.length ? publishedStyles.map((item) => <option key={item.id} value={item.key}>{item.name}</option>) : <option value="jin_yong">金庸</option>}</select></label>
           <label className="new-novel-wide">一句话灵感<textarea value={inspiration} onChange={(event) => setInspiration(event.target.value)} placeholder="一个失忆的剑客在雾都寻找过去……" rows={3} required /></label>
           </div>
           <details className="creative-brief-fields">

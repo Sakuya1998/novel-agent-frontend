@@ -19,6 +19,9 @@ export async function listResources(workspaceId: string, kind: ResourceKind, que
   const response = await apiOperation(operations.list, { parameters: { path: { workspace_id: workspaceId, resource_kind: kind }, query } } as never) as ListResponse;
   return response.items ?? response.resources ?? [];
 }
+export async function listPublishedResources(workspaceId: string, kind: ResourceKind) {
+  return listResources(workspaceId, kind, { status: "published" });
+}
 export function createResource(workspaceId: string, kind: ResourceKind, body: { key: string; name: string; description: string; payload?: Record<string, unknown> }) {
   return apiOperation(operations.create, { parameters: { path: { workspace_id: workspaceId, resource_kind: kind } }, body } as never) as Promise<Resource>;
 }

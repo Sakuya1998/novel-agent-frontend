@@ -74,6 +74,5 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
 export function useWorkspace(): WorkspaceContextValue {
   const value = useContext(WorkspaceContext);
-  if (!value) throw new Error("useWorkspace must be used inside WorkspaceProvider");
-  return value;
+  return value ?? { workspaces: [], workspace: null, workspaceId: null, loading: false, error: "", selectWorkspace: () => undefined, refresh: async () => undefined };
 }
