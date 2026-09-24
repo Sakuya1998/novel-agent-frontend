@@ -77,6 +77,7 @@ export function useWorkbench(enabled = true) {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string>();
+  const workspaceRef = useRef<string | null>(workspaceId);
   const selectedIdRef = useRef<string | undefined>(undefined);
   selectedIdRef.current = selectedId;
 
@@ -88,7 +89,7 @@ export function useWorkbench(enabled = true) {
     const items = await listNovels();
     setNovels(items);
     setSelectedId((current) => current && items.some((item) => item.id === current) ? current : items[0]?.id);
-  }, []);
+  }, [workspaceId]);
 
   const refreshSelected = useCallback(async (id: string) => {
     const [detail, summary, versions] = await Promise.all([
@@ -113,6 +114,16 @@ export function useWorkbench(enabled = true) {
   }, []);
 
   useEffect(() => {
+    const changedWorkspace = workspaceRef.current !== workspaceId;
+    workspaceRef.current = workspaceId;
+    if (changedWorkspace) {
+      setSelectedId(undefined);
+      setNovel(undefined);
+      setState(undefined);
+      setCreativeBriefVersions([]);
+      setModelTraces([]);
+      setMemoryQuality({ latest: null, runs: [] });
+    }
     if (!enabled) {
       setNovels([]);
       setSelectedId(undefined);
@@ -127,7 +138,7 @@ export function useWorkbench(enabled = true) {
     }
     setIsLoading(true);
     refreshList().catch((err: unknown) => setError(err instanceof Error ? err.message : "无法加载作品")).finally(() => setIsLoading(false));
-  }, [enabled, refreshList]);
+  }, [enabled, refreshList, workspaceId]);
 
   useEffect(() => {
     if (!enabled || !selectedId) {
