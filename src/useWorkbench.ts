@@ -4,6 +4,7 @@ import type { CreateNovelPayload } from "./api";
 import { createDefaultCreativeBrief } from "./creativeBrief";
 import type { CanonOperation, CreativeBrief, CreativeBriefVersion, EvaluationBenchmarkRun, MemoryQualityHistory, ModelTrace, Novel, PlanningArtifactType, PlanningReviewSubmission, ReviewSubmission, RunJob, StreamEvent, WorkbenchState } from "./types";
 import { useRunJob } from "./useRunJob";
+import { useWorkspace } from "./workspaces/WorkspaceProvider";
 
 const emptyState = (id: string): WorkbenchState => ({
   novel_id: id,
@@ -63,6 +64,7 @@ const emptyState = (id: string): WorkbenchState => ({
 });
 
 export function useWorkbench(enabled = true) {
+  const { workspaceId } = useWorkspace();
   const [novels, setNovels] = useState<Novel[]>([]);
   const [selectedId, setSelectedId] = useState<string>();
   const [novel, setNovel] = useState<Novel>();
