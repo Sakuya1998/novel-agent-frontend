@@ -1,7 +1,7 @@
 import { ArrowUpRight, RotateCcw, Square } from "lucide-react";
 import type { NovelStatus, RunJob, WorkflowStage } from "../types";
 import { STAGES } from "../types";
-import type { RunConnectionStatus } from "../useRunJob";
+import type { RunConnectionStatus } from "../features/jobs/useRunJob";
 
 interface Props {
   status: NovelStatus;

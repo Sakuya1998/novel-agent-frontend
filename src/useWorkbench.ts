@@ -3,7 +3,7 @@ import { compareChapterEvaluations, createNovel, deleteNovel, evaluateChapterVer
 import type { CreateNovelPayload } from "./api";
 import { createDefaultCreativeBrief } from "./creativeBrief";
 import type { CanonOperation, CreativeBrief, CreativeBriefVersion, EvaluationBenchmarkRun, MemoryQualityHistory, ModelTrace, Novel, PlanningArtifactType, PlanningReviewSubmission, ReviewSubmission, RunJob, StreamEvent, WorkbenchState } from "./types";
-import { useRunJob } from "./useRunJob";
+import { useRunJob } from "./features/jobs/useRunJob";
 import { useWorkspace } from "./workspaces/WorkspaceProvider";
 
 const emptyState = (id: string): WorkbenchState => ({

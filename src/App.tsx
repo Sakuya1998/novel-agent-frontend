@@ -8,23 +8,23 @@ import { CreativeBriefDialog } from "./components/CreativeBriefDialog";
 import { EmptyWorkspace } from "./components/EmptyWorkspace";
 import { EvaluationBenchmarkDialog } from "./components/EvaluationBenchmarkDialog";
 import { ImportExportDialog } from "./components/ImportExportDialog";
-import { KnowledgeWorkspace } from "./components/KnowledgeWorkspace";
+import { KnowledgeWorkspace } from "./features/novels/KnowledgeWorkspace";
 import { MemoryQualityDialog } from "./components/MemoryQualityDialog";
 import { ModelSettingsDialog } from "./components/ModelSettingsDialog";
 import { ModelTraceDialog } from "./components/ModelTraceDialog";
 import { MonitoringDialog } from "./components/MonitoringDialog";
 import { NovelSidebar } from "./components/NovelSidebar";
 import { PlanningReviewPanel } from "./components/PlanningReviewPanel";
-import { PlanningWorkspace } from "./components/PlanningWorkspace";
+import { PlanningWorkspace } from "./features/novels/PlanningWorkspace";
 import { ProjectOverview } from "./components/ProjectOverview";
-import { QualityWorkspace } from "./components/QualityWorkspace";
-import { WritingWorkspace, type WritingReaderFocus } from "./components/WritingWorkspace";
+import { QualityWorkspace } from "./features/novels/QualityWorkspace";
+import { WritingWorkspace, type WritingReaderFocus } from "./features/novels/WritingWorkspace";
 import { StageRail } from "./components/StageRail";
 import { WorkspaceHeader } from "./components/WorkspaceHeader";
 import { WorkspaceNav, type WorkspaceView } from "./components/WorkspaceNav";
 import { useServiceStatus } from "./useServiceStatus";
 import { useWorkbench } from "./useWorkbench";
-import { useReviewWorkflow } from "./useReviewWorkflow";
+import { useReviewWorkflow } from "./features/novels/useReviewWorkflow";
 import { workspacePath } from "./app/router";
 import { isReadOnly } from "./permissions/permissions";
 import type { CanonOperation } from "./types";
@@ -52,17 +52,17 @@ function errorCopy(error: string) {
   return error;
 }
 
-interface AppProps { initialNovelId?: string; initialView?: WorkspaceView; }
+interface AppProps { initialNovelId?: string; initialView?: WorkspaceView; initialDialog?: DialogName; }
 
-function App({ initialNovelId, initialView = "write" }: AppProps) {
+function App({ initialNovelId, initialView, initialDialog }: AppProps) {
   const session = useSession();
   const authEnabled = session.status === "loading" ? undefined : session.enabled;
   const authUser = session.user;
-  const readOnly = isReadOnly(authUser?.role);
+  const readOnly = authEnabled === true && isReadOnly(authUser?.role);
   const workbench = useWorkbench(authEnabled === false || (authEnabled === true && authUser !== null));
   const serviceStatus = useServiceStatus();
-  const [activeDialog, setActiveDialog] = useState<DialogName>();
-  const [workspaceView, setWorkspaceView] = useState<WorkspaceView>(initialView);
+  const [activeDialog, setActiveDialog] = useState<DialogName | undefined>(initialDialog);
+  const [workspaceView, setWorkspaceView] = useState<WorkspaceView>(initialView ?? "write");
   const [readerFocus, setReaderFocus] = useState<WritingReaderFocus>();
   const [createOpen, setCreateOpen] = useState(false);
   const { novel, state, error, isStreaming, lastNode } = workbench;
@@ -75,10 +75,15 @@ function App({ initialNovelId, initialView = "write" }: AppProps) {
     if (initialView) setWorkspaceView(initialView);
   }, [initialView]);
   useEffect(() => {
-    if (!workbench.selectedId) return;
+    if (initialDialog === "benchmarks") void workbench.loadEvaluationBenchmarks();
+    if (initialDialog === "traces") void workbench.loadModelTraces();
+    if (initialDialog === "memory") void workbench.loadMemoryQuality();
+  }, [initialDialog, workbench.loadEvaluationBenchmarks, workbench.loadMemoryQuality, workbench.loadModelTraces]);
+  useEffect(() => {
+    if (!workbench.selectedId || initialDialog) return;
     const target = workspacePath(workbench.selectedId, workspaceView);
     if (window.location.pathname !== target) window.history.replaceState({}, "", target);
-  }, [workbench.selectedId, workspaceView]);
+  }, [initialDialog, workbench.selectedId, workspaceView]);
   const reviewWorkflow = useReviewWorkflow({
     novelId: workbench.selectedId ?? "",
     chapterNumber: state?.current_draft.chapter_number ?? 0,
@@ -96,7 +101,7 @@ function App({ initialNovelId, initialView = "write" }: AppProps) {
   }, [authEnabled, error]);
 
   useEffect(() => {
-    if (!initialView) setWorkspaceView(planningReview ? "plan" : "write");
+    if (initialView === undefined) setWorkspaceView(planningReview ? "plan" : "write");
   }, [workbench.selectedId, planningReview, initialView]);
 
   function changeWorkspaceView(view: WorkspaceView) {
@@ -115,6 +120,7 @@ function App({ initialNovelId, initialView = "write" }: AppProps) {
   }
 
   function openBenchmarks() {
+    if (workbench.selectedId) { setActiveDialog("benchmarks"); window.history.pushState({}, "", `/novels/${encodeURIComponent(workbench.selectedId)}/tools/benchmarks`); window.dispatchEvent(new PopStateEvent("popstate")); }
     setActiveDialog("benchmarks");
     void workbench.loadEvaluationBenchmarks();
   }
@@ -125,8 +131,15 @@ function App({ initialNovelId, initialView = "write" }: AppProps) {
   }
 
   function openTraces() {
+    if (workbench.selectedId) { setActiveDialog("traces"); window.history.pushState({}, "", `/novels/${encodeURIComponent(workbench.selectedId)}/tools/traces`); window.dispatchEvent(new PopStateEvent("popstate")); }
     setActiveDialog("traces");
     void workbench.loadModelTraces();
+  }
+  function openNovelTool(tool: "brief" | "canon" | "memory") {
+    setActiveDialog(tool);
+    if (!workbench.selectedId) return;
+    window.history.pushState({}, "", `/novels/${encodeURIComponent(workbench.selectedId)}/tools/${tool}`);
+    window.dispatchEvent(new PopStateEvent("popstate"));
   }
 
   return (
@@ -187,7 +200,7 @@ function App({ initialNovelId, initialView = "write" }: AppProps) {
               />
             ) : <PlanningWorkspace state={state} /> : null}
 
-            {workspaceView === "knowledge" ? <KnowledgeWorkspace novel={novel} state={state} onOpenBrief={() => !readOnly && setActiveDialog("brief")} onOpenCanon={() => !readOnly && setActiveDialog("canon")} onOpenMemory={() => setActiveDialog("memory")} /> : null}
+            {workspaceView === "knowledge" ? <KnowledgeWorkspace novel={novel} state={state} onOpenBrief={() => !readOnly && openNovelTool("brief")} onOpenCanon={() => !readOnly && openNovelTool("canon")} onOpenMemory={() => openNovelTool("memory")} /> : null}
 
             {workspaceView === "quality" ? state.status === "completed" && state.book_audit ? (
               <div className="workspace-book-audit"><BookAuditPanel report={state.book_audit} totalChapters={state.total_chapters} disabled={isStreaming || readOnly} onStartRevision={readOnly ? async () => undefined : workbench.startBookRevision} /></div>

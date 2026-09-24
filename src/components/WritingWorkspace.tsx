@@ -1,7 +1,7 @@
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import type { CanonOperation, ChapterEvaluation, EvaluationComparison, Novel, WorkbenchState } from "../types";
 import type { ReviewWorkflow } from "../useReviewWorkflow";
-import type { RunConnectionStatus } from "../useRunJob";
+import type { RunConnectionStatus } from "../features/jobs/useRunJob";
 import { ChapterReader } from "./ChapterReader";
 import { ReviewWorkspace } from "./ReviewWorkspace";
 import { WritingStatusBar } from "./WritingStatusBar";

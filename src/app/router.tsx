@@ -10,11 +10,17 @@ import { ResourcesPage } from "../pages/settings/ResourcesPage";
 import type { ResourceKind } from "../features/resources/resourceSchemas";
 
 const NOVEL_VIEWS = ["overview", "write", "plan", "knowledge", "quality"] as const;
+const NOVEL_TOOLS = ["brief", "canon", "traces", "benchmarks", "memory"] as const;
 export type NovelRouteView = typeof NOVEL_VIEWS[number];
+export type NovelToolRoute = typeof NOVEL_TOOLS[number];
 
 export function parseNovelRoute(path: string): { novelId: string; view: NovelRouteView } | null {
   const match = path.match(/^\/novels\/([^/]+)\/(overview|write|plan|knowledge|quality)\/?$/);
   return match ? { novelId: decodeURIComponent(match[1]), view: match[2] as NovelRouteView } : null;
+}
+export function parseNovelToolRoute(path: string): { novelId: string; tool: NovelToolRoute } | null {
+  const match = path.match(/^\/novels\/([^/]+)\/tools\/(brief|canon|traces|benchmarks|memory)\/?$/);
+  return match ? { novelId: decodeURIComponent(match[1]), tool: match[2] as NovelToolRoute } : null;
 }
 
 export function workspacePath(novelId: string, view: WorkspaceView | "overview" = "write") {
@@ -42,6 +48,8 @@ export function AppRouter() {
   if (path.startsWith("/app/workspaces/") && path.endsWith("/overview")) return <WorkspaceOverviewPage onNavigate={go} />;
   const novelRoute = parseNovelRoute(path);
   if (novelRoute) return <App initialNovelId={novelRoute.novelId} initialView={novelRoute.view === "overview" ? "write" : novelRoute.view} />;
+  const toolRoute = parseNovelToolRoute(path);
+  if (toolRoute) return <App initialNovelId={toolRoute.novelId} initialDialog={toolRoute.tool} />;
   const settingsMatch = path.match(/^\/settings\/(models|resources|audit)\/?$/);
   if (settingsMatch) return <SettingsPage section={settingsMatch[1] as SettingsSection} onBack={() => go("/app")} />;
   const resourcesMatch = path.match(/^\/settings\/resources\/(content-types|styles|creative-templates|quality-policies)\/?$/);
