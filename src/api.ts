@@ -61,6 +61,9 @@ function csrfToken(): string {
 }
 
 function responseError(body: unknown, status: number): string {
+  if (body && typeof body === "object" && "message" in body && typeof (body as { message?: unknown }).message === "string") {
+    return (body as { message: string }).message;
+  }
   if (!body || typeof body !== "object" || !("detail" in body)) return `请求失败 (${status})`;
   const detail = (body as { detail?: unknown }).detail;
   if (typeof detail === "string") return detail;
@@ -138,7 +141,7 @@ export async function exportNovel(
   if (metadata.author) query.set("author", metadata.author);
   if (metadata.publisher) query.set("publisher", metadata.publisher);
   if (metadata.language) query.set("language", metadata.language);
-  const response = await fetchApi(`${API_BASE}/api/novels/${encodeURIComponent(id)}/export?${query.toString()}`, {
+  const response = await fetchApi(`${API_BASE}/api/v1/novels/${encodeURIComponent(id)}/export?${query.toString()}`, {
     signal: requestSignal(),
     headers: {
       ...(password ? { "X-Backup-Password": password } : {}),
@@ -151,7 +154,7 @@ export async function exportNovel(
   if (response.status === 202) {
     const payload = await response.json() as { job: TransferJob };
     const completed = await waitForTransfer(payload.job.id);
-    const download = await fetchApi(`${API_BASE}/api/transfers/${encodeURIComponent(completed.id)}/download`, {
+    const download = await fetchApi(`${API_BASE}/api/v1/transfers/${encodeURIComponent(completed.id)}/download`, {
       signal: requestSignal(),
     });
     if (!download.ok) {
@@ -174,7 +177,7 @@ type ImportNovelResult = { novel: Novel; imported_chapters: number; source_forma
 
 async function waitForTransfer(jobId: string): Promise<TransferJob> {
   for (;;) {
-    const job = await request<TransferJob>(`/api/transfers/${encodeURIComponent(jobId)}`);
+    const job = await request<TransferJob>(`/api/v1/transfers/${encodeURIComponent(jobId)}`);
     if (job.status === "completed") return job;
     if (["failed", "cancelled", "interrupted"].includes(job.status)) {
       throw new Error(job.error || "后台传输任务未完成");
@@ -188,7 +191,7 @@ export async function importNovel(file: File, title = "", password = ""): Promis
   form.append("file", file);
   if (password) form.append("password", password);
   const payload = await request<ImportNovelResult | { job: TransferJob }>(
-    `/api/novels/import?title=${encodeURIComponent(title)}`,
+    `/api/v1/novels/import?title=${encodeURIComponent(title)}`,
     { method: "POST", body: form },
   );
   if (!("job" in payload)) return payload;
@@ -196,21 +199,22 @@ export async function importNovel(file: File, title = "", password = ""): Promis
   return completed.result as ImportNovelResult;
 }
 
-export function listNovels(): Promise<Novel[]> {
-  return request<Novel[]>("/api/novels");
+export async function listNovels(): Promise<Novel[]> {
+  const payload = await request<Novel[] | { items: Novel[] }>("/api/v1/novels");
+  return Array.isArray(payload) ? payload : payload.items;
 }
 
 export function getNovel(id: string): Promise<Novel> {
-  return request<Novel>(`/api/novels/${encodeURIComponent(id)}`);
+  return request<Novel>(`/api/v1/novels/${encodeURIComponent(id)}`);
 }
 
 export function getNovelState(id: string): Promise<WorkbenchState> {
-  return request<WorkbenchState>(`/api/novels/${encodeURIComponent(id)}/state`);
+  return request<WorkbenchState>(`/api/v1/novels/${encodeURIComponent(id)}/state`);
 }
 
 export async function loginAuth(identifier: string, password: string): Promise<AuthSession> {
   clearStoredAuth();
-  return request<AuthSession>("/api/auth/login", {
+  return request<AuthSession>("/api/v1/auth/login", {
     method: "POST",
     body: JSON.stringify({ identifier, password }),
   });
@@ -218,7 +222,7 @@ export async function loginAuth(identifier: string, password: string): Promise<A
 
 export async function getAuthStatus(): Promise<AuthStatus> {
   clearStoredAuth();
-  const status = await request<AuthStatus>("/api/auth/status");
+  const status = await request<AuthStatus>("/api/v1/auth/status");
   return status;
 }
 
@@ -230,7 +234,7 @@ export async function registerAuth(payload: {
   tenant_name: string;
 }): Promise<AuthSession> {
   clearStoredAuth();
-  return request<AuthSession>("/api/auth/register", {
+  return request<AuthSession>("/api/v1/auth/register", {
     method: "POST",
     body: JSON.stringify(payload),
   });
@@ -238,7 +242,7 @@ export async function registerAuth(payload: {
 
 export async function logoutAuth(): Promise<void> {
   try {
-    await request<{ logged_out: boolean }>("/api/auth/logout", { method: "POST" });
+    await request<{ logged_out: boolean }>("/api/v1/auth/logout", { method: "POST" });
   } finally {
     clearStoredAuth();
   }
@@ -262,24 +266,24 @@ export async function getReadiness(): Promise<ReadinessReport> {
 export function listAuditLogs(limit = 50, action = ""): Promise<{ logs: AuditLog[] }> {
   const query = new URLSearchParams({ limit: String(limit) });
   if (action.trim()) query.set("action", action.trim());
-  return request<{ logs: AuditLog[] }>(`/api/audit/logs?${query.toString()}`);
+  return request<{ logs: AuditLog[] }>(`/api/v1/audit/logs?${query.toString()}`);
 }
 
 export function getMonitoringSummary(): Promise<MonitoringSummary> {
-  return request<MonitoringSummary>("/api/monitoring/summary");
+  return request<MonitoringSummary>("/api/v1/monitoring/summary");
 }
 
 export function listModelTraces(id: string, limit = 100, agent = ""): Promise<ModelTrace[]> {
   const query = new URLSearchParams({ limit: String(limit) });
   if (agent.trim()) query.set("agent", agent.trim());
   return request<ModelTrace[]>(
-    `/api/novels/${encodeURIComponent(id)}/traces?${query.toString()}`,
+    `/api/v1/novels/${encodeURIComponent(id)}/traces?${query.toString()}`,
   );
 }
 
 export function listCreativeBriefVersions(id: string): Promise<CreativeBriefVersion[]> {
   return request<CreativeBriefVersion[]>(
-    `/api/novels/${encodeURIComponent(id)}/creative-brief/versions`,
+    `/api/v1/novels/${encodeURIComponent(id)}/creative-brief/versions`,
   );
 }
 
@@ -293,7 +297,7 @@ export function updateCreativeBrief(
   stale_candidate_count: number;
   requires_revalidation: boolean;
 }> {
-  return request(`/api/novels/${encodeURIComponent(id)}/creative-brief`, {
+  return request(`/api/v1/novels/${encodeURIComponent(id)}/creative-brief`, {
     method: "PUT",
     body: JSON.stringify({
       creative_brief: creativeBrief,
@@ -304,31 +308,31 @@ export function updateCreativeBrief(
 }
 
 export function listBookAudits(id: string): Promise<BookAuditRecord[]> {
-  return request<BookAuditRecord[]>(`/api/novels/${encodeURIComponent(id)}/book-audits`);
+  return request<BookAuditRecord[]>(`/api/v1/novels/${encodeURIComponent(id)}/book-audits`);
 }
 
 export function getNovelCanon(id: string): Promise<CanonDetail> {
-  return request<CanonDetail>(`/api/novels/${encodeURIComponent(id)}/canon`);
+  return request<CanonDetail>(`/api/v1/novels/${encodeURIComponent(id)}/canon`);
 }
 
 export function getNovelConflicts(id: string, chapterNumber?: number): Promise<{ chapter_number: number; issues: ConflictExplanation[]; report: string; canon_version: number }> {
   const query = chapterNumber ? `?chapter_number=${encodeURIComponent(String(chapterNumber))}` : "";
-  return request(`/api/novels/${encodeURIComponent(id)}/conflicts${query}`);
+  return request(`/api/v1/novels/${encodeURIComponent(id)}/conflicts${query}`);
 }
 
 export function getMemoryQuality(id: string, limit = 20): Promise<MemoryQualityHistory> {
-  return request<MemoryQualityHistory>(`/api/novels/${encodeURIComponent(id)}/memory/quality?limit=${limit}`);
+  return request<MemoryQualityHistory>(`/api/v1/novels/${encodeURIComponent(id)}/memory/quality?limit=${limit}`);
 }
 
 export function evaluateMemoryQuality(id: string, k = 5): Promise<MemoryQualityRun> {
-  return request<MemoryQualityRun>(`/api/novels/${encodeURIComponent(id)}/memory/evaluate`, {
+  return request<MemoryQualityRun>(`/api/v1/novels/${encodeURIComponent(id)}/memory/evaluate`, {
     method: "POST",
     body: JSON.stringify({ k }),
   });
 }
 
 export function rebuildMemory(id: string, evaluate = true, k = 5): Promise<{ run: MemoryQualityRun; rebuild: Record<string, unknown>; quality: MemoryQualityRun["report"]; memory: Record<string, unknown> }> {
-  return request(`/api/novels/${encodeURIComponent(id)}/memory/rebuild`, {
+  return request(`/api/v1/novels/${encodeURIComponent(id)}/memory/rebuild`, {
     method: "POST",
     body: JSON.stringify({ evaluate, k }),
   });
@@ -344,7 +348,7 @@ export function getChapterVersionDiff(
     from_version: String(fromVersion),
     to_version: String(toVersion),
   });
-  return request(`/api/novels/${encodeURIComponent(id)}/chapters/${chapterNumber}/versions/diff?${query}`);
+  return request(`/api/v1/novels/${encodeURIComponent(id)}/chapters/${chapterNumber}/versions/diff?${query}`);
 }
 
 export function getPlanningVersion(
@@ -354,7 +358,7 @@ export function getPlanningVersion(
   versionNumber: number,
 ): Promise<PlanningVersion> {
   const query = new URLSearchParams({ chapter_number: String(chapterNumber) });
-  return request(`/api/novels/${encodeURIComponent(id)}/planning/${artifactType}/versions/${versionNumber}?${query}`);
+  return request(`/api/v1/novels/${encodeURIComponent(id)}/planning/${artifactType}/versions/${versionNumber}?${query}`);
 }
 
 export function getPlanningVersionDiff(
@@ -369,7 +373,7 @@ export function getPlanningVersionDiff(
     from_version: String(fromVersion),
     to_version: String(toVersion),
   });
-  return request(`/api/novels/${encodeURIComponent(id)}/planning/${artifactType}/versions/diff?${query}`);
+  return request(`/api/v1/novels/${encodeURIComponent(id)}/planning/${artifactType}/versions/diff?${query}`);
 }
 
 export function evaluateChapterVersion(
@@ -378,7 +382,7 @@ export function evaluateChapterVersion(
   versionNumber: number,
   includeJudge: boolean,
 ): Promise<ChapterEvaluation> {
-  return request(`/api/novels/${encodeURIComponent(id)}/chapters/${chapterNumber}/versions/${versionNumber}/evaluations`, {
+  return request(`/api/v1/novels/${encodeURIComponent(id)}/chapters/${chapterNumber}/versions/${versionNumber}/evaluations`, {
     method: "POST",
     body: JSON.stringify({ include_judge: includeJudge }),
   });
@@ -389,7 +393,7 @@ export function setChapterEvaluationBaseline(
   chapterNumber: number,
   evaluationId: number,
 ): Promise<ChapterEvaluation> {
-  return request(`/api/novels/${encodeURIComponent(id)}/chapters/${chapterNumber}/evaluations/${evaluationId}/baseline`, {
+  return request(`/api/v1/novels/${encodeURIComponent(id)}/chapters/${chapterNumber}/evaluations/${evaluationId}/baseline`, {
     method: "PUT",
   });
 }
@@ -401,18 +405,18 @@ export function compareChapterEvaluations(
   toVersion: number,
 ): Promise<EvaluationComparison> {
   const query = new URLSearchParams({ from_version: String(fromVersion), to_version: String(toVersion) });
-  return request(`/api/novels/${encodeURIComponent(id)}/chapters/${chapterNumber}/evaluations/compare?${query}`);
+  return request(`/api/v1/novels/${encodeURIComponent(id)}/chapters/${chapterNumber}/evaluations/compare?${query}`);
 }
 
 export function listEvaluationBenchmarks(limit = 50): Promise<EvaluationBenchmarkRun[]> {
-  return request<EvaluationBenchmarkRun[]>(`/api/evaluations/benchmarks?limit=${limit}`);
+  return request<EvaluationBenchmarkRun[]>(`/api/v1/evaluations/benchmarks?limit=${limit}`);
 }
 
 export function runEvaluationBenchmark(
   includeJudge: boolean,
   baselineRunId = "",
 ): Promise<EvaluationBenchmarkRun> {
-  return request<EvaluationBenchmarkRun>("/api/evaluations/benchmarks", {
+  return request<EvaluationBenchmarkRun>("/api/v1/evaluations/benchmarks", {
     method: "POST",
     body: JSON.stringify({
       include_judge: includeJudge,
@@ -430,26 +434,26 @@ export type CreateNovelPayload = Pick<Novel, "title" | "genre" | "inspiration" |
 };
 
 export function createNovel(payload: CreateNovelPayload): Promise<Novel> {
-  return request<Novel>("/api/novels", { method: "POST", body: JSON.stringify(payload) });
+  return request<Novel>("/api/v1/novels", { method: "POST", body: JSON.stringify(payload) });
 }
 
 export function deleteNovel(id: string): Promise<{ deleted: boolean; novel_id: string }> {
-  return request<{ deleted: boolean; novel_id: string }>(`/api/novels/${encodeURIComponent(id)}`, { method: "DELETE" });
+  return request<{ deleted: boolean; novel_id: string }>(`/api/v1/novels/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
 export function getModelSettings(): Promise<ModelSettings> {
-  return request<ModelSettings>("/api/model-settings");
+  return request<ModelSettings>("/api/v1/model-settings");
 }
 
 export function createModelProfile(payload: ModelProfileWrite): Promise<ModelProfile> {
-  return request<ModelProfile>("/api/model-settings/profiles", {
+  return request<ModelProfile>("/api/v1/model-settings/profiles", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
 export function updateModelProfile(id: string, payload: ModelProfileWrite): Promise<ModelProfile> {
-  return request<ModelProfile>(`/api/model-settings/profiles/${encodeURIComponent(id)}`, {
+  return request<ModelProfile>(`/api/v1/model-settings/profiles/${encodeURIComponent(id)}`, {
     method: "PUT",
     body: JSON.stringify(payload),
   });
@@ -457,13 +461,13 @@ export function updateModelProfile(id: string, payload: ModelProfileWrite): Prom
 
 export function deleteModelProfile(id: string): Promise<{ deleted: boolean; profile_id: string }> {
   return request<{ deleted: boolean; profile_id: string }>(
-    `/api/model-settings/profiles/${encodeURIComponent(id)}`,
+    `/api/v1/model-settings/profiles/${encodeURIComponent(id)}`,
     { method: "DELETE" },
   );
 }
 
 export function saveModelRoutes(payload: ModelRoutes): Promise<ModelRoutes> {
-  return request<ModelRoutes>("/api/model-settings/routes", {
+  return request<ModelRoutes>("/api/v1/model-settings/routes", {
     method: "PUT",
     body: JSON.stringify(payload),
   });
@@ -474,7 +478,7 @@ export function testModelProfile(
   kind: "chat" | "embedding",
   modelName: string,
 ): Promise<ConnectionTestResult> {
-  return request<ConnectionTestResult>(`/api/model-settings/profiles/${encodeURIComponent(id)}/test`, {
+  return request<ConnectionTestResult>(`/api/v1/model-settings/profiles/${encodeURIComponent(id)}/test`, {
     method: "POST",
     body: JSON.stringify({ kind, model_name: modelName }),
   });
@@ -486,7 +490,7 @@ export async function streamNovel(
   review: ReviewSubmission | PlanningReviewSubmission | undefined,
   onEvent: (event: StreamEvent) => void,
 ): Promise<void> {
-  return streamRequest(`/api/novels/${encodeURIComponent(id)}/${action}`, {
+  return streamRequest(`/api/v1/novels/${encodeURIComponent(id)}/${action}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: action === "resume" ? JSON.stringify(review ?? { feedback: "approve" }) : undefined,
@@ -527,7 +531,7 @@ export function listChapterCandidates(
   chapterNumber: number,
 ): Promise<ChapterCandidate[]> {
   return request(
-    `/api/novels/${encodeURIComponent(id)}/chapters/${chapterNumber}/candidates`,
+    `/api/v1/novels/${encodeURIComponent(id)}/chapters/${chapterNumber}/candidates`,
   );
 }
 
@@ -571,7 +575,7 @@ export async function streamCanonUpdate(
   operation: CanonOperation,
   onEvent: (event: StreamEvent) => void,
 ): Promise<void> {
-  return streamRequest(`/api/novels/${encodeURIComponent(id)}/canon`, {
+  return streamRequest(`/api/v1/novels/${encodeURIComponent(id)}/canon`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(operation),

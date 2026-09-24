@@ -42,7 +42,7 @@ test("cookie session survives refresh and protects the workspace", async ({ page
       .map((item) => item.trim())
       .find((item) => item.startsWith("novel_agent_csrf="))
       ?.split("=", 2)[1] ?? "";
-    const response = await fetch("/api/novels", {
+    const response = await fetch("/api/v1/novels", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json", "X-CSRF-Token": decodeURIComponent(csrf) },
@@ -71,5 +71,5 @@ test("cookie session survives refresh and protects the workspace", async ({ page
   expect((await page.context().cookies()).some((cookie) => cookie.name === "novel_agent_session")).toBe(false);
   expect(consoleErrors).toEqual([]);
   page.removeAllListeners("console");
-  expect(await page.evaluate(async () => (await fetch("/api/novels", { credentials: "include" })).status)).toBe(401);
+  expect(await page.evaluate(async () => (await fetch("/api/v1/novels", { credentials: "include" })).status)).toBe(401);
 });
