@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import App from "./App";
+import { AppRouter } from "./app/router";
 import { SessionProvider } from "./auth/SessionProvider";
 import { AppErrorBoundary } from "./components/AppErrorBoundary";
 import { WorkspaceProvider } from "./workspaces/WorkspaceProvider";
@@ -9,6 +9,6 @@ import "./workspace.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <AppErrorBoundary><SessionProvider><WorkspaceProvider><App /></WorkspaceProvider></SessionProvider></AppErrorBoundary>
+    <AppErrorBoundary><SessionProvider><WorkspaceProvider><AppRouter /></WorkspaceProvider></SessionProvider></AppErrorBoundary>
   </StrictMode>,
 );
