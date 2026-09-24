@@ -10,6 +10,7 @@ interface Props {
   onRefresh: () => Promise<MemoryQualityHistory>;
   onEvaluate: (k?: number) => Promise<unknown>;
   onRebuild: (evaluate?: boolean, k?: number) => Promise<unknown>;
+  embedded?: boolean;
 }
 
 function reportOf(history: MemoryQualityHistory): MemoryQualityReport | null {
@@ -22,7 +23,7 @@ function percent(value: number | undefined): string {
   return `${((value ?? 0) * 100).toFixed(1)}%`;
 }
 
-export function MemoryQualityDialog({ open, history, onClose, onRefresh, onEvaluate, onRebuild }: Props) {
+export function MemoryQualityDialog({ open, history, onClose, onRefresh, onEvaluate, onRebuild, embedded = false }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const { dialogRef, onBackdropMouseDown } = useDialogLifecycle<HTMLElement>(open, onClose, busy);
@@ -39,8 +40,8 @@ export function MemoryQualityDialog({ open, history, onClose, onRefresh, onEvalu
     try { await action(); } catch (reason) { setError(reason instanceof Error ? reason.message : "记忆操作失败"); } finally { setBusy(false); }
   }
 
-  return <div className="model-settings-backdrop" onMouseDown={onBackdropMouseDown}>
-  <section ref={dialogRef} tabIndex={-1} className="model-settings-dialog memory-quality-dialog" role="dialog" aria-modal="true" aria-labelledby="memory-quality-title">
+  return <div className={embedded ? "tool-page-shell" : "model-settings-backdrop"} onMouseDown={embedded ? undefined : onBackdropMouseDown}>
+  <section ref={dialogRef} tabIndex={-1} className={`model-settings-dialog memory-quality-dialog ${embedded ? "tool-page-panel" : ""}`} role={embedded ? "region" : "dialog"} aria-modal={embedded ? undefined : "true"} aria-labelledby="memory-quality-title">
     <div className="memory-quality-header"><div className="dialog-title"><BrainCircuit size={18} /><div><span className="eyebrow">MEMORY QUALITY</span><h2 id="memory-quality-title">长期记忆质量</h2></div></div><button type="button" className="icon-button" title="关闭" aria-label="关闭" disabled={busy} onClick={onClose}><X size={16} /></button></div>
     <div className="memory-quality-toolbar"><button type="button" className="secondary-button" disabled={busy} onClick={() => void run(() => onEvaluate(5))}><Gauge size={14} />运行检索评测</button><button type="button" className="primary-button" disabled={busy} onClick={() => void run(() => onRebuild(true, 5))}><RefreshCw size={14} />重建并评测索引</button></div>
     {error && <div className="memory-quality-error" role="alert"><AlertTriangle size={14} />{error}</div>}

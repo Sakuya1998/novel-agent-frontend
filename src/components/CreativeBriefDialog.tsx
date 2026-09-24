@@ -19,6 +19,7 @@ interface Props {
   disabled: boolean;
   onClose: () => void;
   onSubmit: (brief: CreativeBrief, changeSummary: string) => Promise<unknown>;
+  embedded?: boolean;
 }
 
 function splitList(value: string, limit: number): string[] {
@@ -29,7 +30,7 @@ function splitList(value: string, limit: number): string[] {
     .slice(0, limit);
 }
 
-export function CreativeBriefDialog({ open, brief, version, versions, disabled, onClose, onSubmit }: Props) {
+export function CreativeBriefDialog({ open, brief, version, versions, disabled, onClose, onSubmit, embedded = false }: Props) {
   const [draft, setDraft] = useState<CreativeBrief>(createDefaultCreativeBrief);
   const [themes, setThemes] = useState("");
   const [mustInclude, setMustInclude] = useState("");
@@ -83,8 +84,8 @@ export function CreativeBriefDialog({ open, brief, version, versions, disabled, 
   }
 
   if (!open) return null;
-  return <div className="model-settings-backdrop" onMouseDown={onBackdropMouseDown}>
-    <section ref={dialogRef} tabIndex={-1} className="model-settings-dialog creative-brief-dialog" role="dialog" aria-modal="true" aria-labelledby="creative-brief-title">
+  return <div className={embedded ? "tool-page-shell" : "model-settings-backdrop"} onMouseDown={embedded ? undefined : onBackdropMouseDown}>
+    <section ref={dialogRef} tabIndex={-1} className={`model-settings-dialog creative-brief-dialog ${embedded ? "tool-page-panel" : ""}`} role={embedded ? "region" : "dialog"} aria-modal={embedded ? undefined : "true"} aria-labelledby="creative-brief-title">
       <header className="model-settings-header">
         <div><span className="eyebrow">CREATIVE BRIEF</span><h2 id="creative-brief-title">创作约束</h2></div>
         <div className="model-settings-header-actions"><span className="model-source-badge database">版本 v{version ?? 1}</span><button className="dialog-close-button" type="button" title="关闭" aria-label="关闭创作约束" onClick={onClose}><X size={18} /></button></div>

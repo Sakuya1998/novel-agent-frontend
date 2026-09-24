@@ -8,9 +8,10 @@ interface Props {
   runs: EvaluationBenchmarkRun[];
   onRun: (includeJudge: boolean, baselineRunId?: string) => Promise<EvaluationBenchmarkRun>;
   onClose: () => void;
+  embedded?: boolean;
 }
 
-export function EvaluationBenchmarkDialog({ open, runs, onRun, onClose }: Props) {
+export function EvaluationBenchmarkDialog({ open, runs, onRun, onClose, embedded = false }: Props) {
   const [includeJudge, setIncludeJudge] = useState(false);
   const [baselineRunId, setBaselineRunId] = useState("");
   const [selectedId, setSelectedId] = useState("");
@@ -36,8 +37,8 @@ export function EvaluationBenchmarkDialog({ open, runs, onRun, onClose }: Props)
   }
 
   if (!open) return null;
-  return <div className="model-settings-backdrop" onMouseDown={onBackdropMouseDown}>
-    <section ref={dialogRef} tabIndex={-1} className="model-settings-dialog evaluation-benchmark-dialog" role="dialog" aria-modal="true" aria-labelledby="evaluation-benchmark-title">
+  return <div className={embedded ? "tool-page-shell" : "model-settings-backdrop"} onMouseDown={embedded ? undefined : onBackdropMouseDown}>
+    <section ref={dialogRef} tabIndex={-1} className={`model-settings-dialog evaluation-benchmark-dialog ${embedded ? "tool-page-panel" : ""}`} role={embedded ? "region" : "dialog"} aria-modal={embedded ? undefined : "true"} aria-labelledby="evaluation-benchmark-title">
       <header className="model-settings-header">
         <div><span className="eyebrow">REGRESSION EVALS</span><h2 id="evaluation-benchmark-title">质量评测基准</h2></div>
         <button className="dialog-close-button" type="button" title="关闭" aria-label="关闭质量评测基准" disabled={loading} onClick={onClose}><X size={18} /></button>

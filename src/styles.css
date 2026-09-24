@@ -102,6 +102,8 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .settings-page > header { display: flex; align-items: center; gap: 14px; max-width: 900px; margin: 0 auto 28px; }
 .settings-page h1 { display: flex; align-items: center; gap: 9px; margin: 2px 0 0; font: 600 30px "Source Serif 4", serif; }
 .settings-placeholder { max-width: 900px; margin: 0 auto; padding: 22px; border: 1px solid #d8d6ce; background: #fff; display: grid; gap: 10px; }
+.tool-page-shell { max-width: 1100px; margin: 0 auto; }
+.tool-page-panel { width: 100% !important; max-height: none !important; box-shadow: none !important; }
 .settings-placeholder h2 { margin: 0; font-size: 18px; }
 .settings-placeholder p, .settings-placeholder span { color: #68736d; font-size: 13px; }
 .auth-form { width: min(420px, 100%); display: grid; gap: 14px; padding: 32px; border: 1px solid #d8d4cb; background: #fbfaf6; box-shadow: 0 14px 36px rgba(44, 54, 48, .08); }

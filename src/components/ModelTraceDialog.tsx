@@ -8,13 +8,14 @@ interface Props {
   traces: ModelTrace[];
   onRefresh: (agent?: string) => Promise<ModelTrace[]>;
   onClose: () => void;
+  embedded?: boolean;
 }
 
 function shortHash(value: string): string {
   return value ? value.slice(0, 10) : "-";
 }
 
-export function ModelTraceDialog({ open, traces, onRefresh, onClose }: Props) {
+export function ModelTraceDialog({ open, traces, onRefresh, onClose, embedded = false }: Props) {
   const [agent, setAgent] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -37,8 +38,8 @@ export function ModelTraceDialog({ open, traces, onRefresh, onClose }: Props) {
   }
 
   if (!open) return null;
-  return <div className="model-settings-backdrop" onMouseDown={onBackdropMouseDown}>
-    <section ref={dialogRef} tabIndex={-1} className="model-settings-dialog model-trace-dialog" role="dialog" aria-modal="true" aria-labelledby="model-trace-title">
+  return <div className={embedded ? "tool-page-shell" : "model-settings-backdrop"} onMouseDown={embedded ? undefined : onBackdropMouseDown}>
+    <section ref={dialogRef} tabIndex={-1} className={`model-settings-dialog model-trace-dialog ${embedded ? "tool-page-panel" : ""}`} role={embedded ? "region" : "dialog"} aria-modal={embedded ? undefined : "true"} aria-labelledby="model-trace-title">
       <header className="model-settings-header">
         <div><span className="eyebrow">AGENT TRACE</span><h2 id="model-trace-title">模型调用轨迹</h2></div>
         <div className="model-settings-header-actions"><span className="model-source-badge database">最近 {traces.length} 条</span><button className="dialog-close-button" type="button" title="关闭" aria-label="关闭模型调用轨迹" onClick={onClose}><X size={18} /></button></div>

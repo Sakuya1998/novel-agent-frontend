@@ -18,11 +18,12 @@ interface Props {
   onSubmit: (operation: CanonOperation) => Promise<void>;
   currentChapter?: number;
   scenePlan?: ScenePlanItem[];
+  embedded?: boolean;
 }
 
 const emptyFactEditor = (targetType: "world_fact" | "fact"): FactEditor => ({ targetType, path: "", subject: "", kind: "manual", value: "" });
 
-export function CanonDialog({ open, novelId, editable, disabled, onClose, onSubmit, currentChapter, scenePlan }: Props) {
+export function CanonDialog({ open, novelId, editable, disabled, onClose, onSubmit, currentChapter, scenePlan, embedded = false }: Props) {
   const [tab, setTab] = useState<Tab>("world");
   const [canon, setCanon] = useState<CanonDetail>();
   const [isLoading, setIsLoading] = useState(false);
@@ -103,8 +104,8 @@ export function CanonDialog({ open, novelId, editable, disabled, onClose, onSubm
 
   if (!open) return null;
 
-  return <div className="model-settings-backdrop" onMouseDown={onBackdropMouseDown}>
-    <section ref={dialogRef} tabIndex={-1} className="canon-dialog" role="dialog" aria-modal="true" aria-labelledby="canon-title">
+  return <div className={embedded ? "tool-page-shell" : "model-settings-backdrop"} onMouseDown={embedded ? undefined : onBackdropMouseDown}>
+    <section ref={dialogRef} tabIndex={-1} className={`canon-dialog ${embedded ? "tool-page-panel" : ""}`} role={embedded ? "region" : "dialog"} aria-modal={embedded ? undefined : "true"} aria-labelledby="canon-title">
       <header className="model-settings-header">
         <div><span className="eyebrow">CANON CONTROL</span><h2 id="canon-title">设定治理</h2></div>
         <div className="model-settings-header-actions"><span className={`model-source-badge ${editable ? "database" : "environment"}`}>{editable ? "可编辑" : "只读"}</span><button className="dialog-close-button" type="button" title="关闭" aria-label="关闭 Canon" onClick={onClose}><X size={18} /></button></div>

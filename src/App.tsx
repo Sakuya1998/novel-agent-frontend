@@ -141,6 +141,13 @@ function App({ initialNovelId, initialView, initialDialog }: AppProps) {
     window.history.pushState({}, "", `/novels/${encodeURIComponent(workbench.selectedId)}/tools/${tool}`);
     window.dispatchEvent(new PopStateEvent("popstate"));
   }
+  function closeDialog() {
+    setActiveDialog(undefined);
+    if (initialDialog && workbench.selectedId) {
+      window.history.pushState({}, "", workspacePath(workbench.selectedId, workspaceView));
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    }
+  }
 
   return (
     <div className="app-shell">
@@ -231,11 +238,11 @@ function App({ initialNovelId, initialView, initialDialog }: AppProps) {
         )}
       </main>
 
-      <CanonDialog open={activeDialog === "canon"} novelId={workbench.selectedId} editable={state?.status === "human_review"} disabled={isStreaming || Boolean(reviewWorkflow.busyAction)} currentChapter={state?.current_chapter} scenePlan={state?.current_draft.scene_plan} onClose={() => setActiveDialog(undefined)} onSubmit={applyCanon} />
-      <CreativeBriefDialog open={activeDialog === "brief"} brief={creativeBrief} version={novel?.creative_brief_version ?? state?.creative_brief_version} versions={workbench.creativeBriefVersions} disabled={isStreaming} onClose={() => setActiveDialog(undefined)} onSubmit={workbench.updateBrief} />
-      <ModelTraceDialog open={activeDialog === "traces"} traces={workbench.modelTraces} onRefresh={workbench.loadModelTraces} onClose={() => setActiveDialog(undefined)} />
-      <EvaluationBenchmarkDialog open={activeDialog === "benchmarks"} runs={workbench.evaluationBenchmarks} onRun={workbench.runBenchmark} onClose={() => setActiveDialog(undefined)} />
-      <MemoryQualityDialog open={activeDialog === "memory"} history={workbench.memoryQuality} onRefresh={workbench.loadMemoryQuality} onEvaluate={workbench.runMemoryQuality} onRebuild={workbench.rebuildMemoryIndex} onClose={() => setActiveDialog(undefined)} />
+      <CanonDialog open={activeDialog === "canon"} embedded={initialDialog === "canon"} novelId={workbench.selectedId} editable={state?.status === "human_review"} disabled={isStreaming || Boolean(reviewWorkflow.busyAction)} currentChapter={state?.current_chapter} scenePlan={state?.current_draft.scene_plan} onClose={closeDialog} onSubmit={applyCanon} />
+      <CreativeBriefDialog open={activeDialog === "brief"} embedded={initialDialog === "brief"} brief={creativeBrief} version={novel?.creative_brief_version ?? state?.creative_brief_version} versions={workbench.creativeBriefVersions} disabled={isStreaming} onClose={closeDialog} onSubmit={workbench.updateBrief} />
+      <ModelTraceDialog open={activeDialog === "traces"} embedded={initialDialog === "traces"} traces={workbench.modelTraces} onRefresh={workbench.loadModelTraces} onClose={closeDialog} />
+      <EvaluationBenchmarkDialog open={activeDialog === "benchmarks"} embedded={initialDialog === "benchmarks"} runs={workbench.evaluationBenchmarks} onRun={workbench.runBenchmark} onClose={closeDialog} />
+      <MemoryQualityDialog open={activeDialog === "memory"} embedded={initialDialog === "memory"} history={workbench.memoryQuality} onRefresh={workbench.loadMemoryQuality} onEvaluate={workbench.runMemoryQuality} onRebuild={workbench.rebuildMemoryIndex} onClose={closeDialog} />
       <ImportExportDialog open={activeDialog === "transfer"} novelTitle={novel?.title ?? ""} onClose={() => setActiveDialog(undefined)} onExport={workbench.exportNovel} onImport={workbench.importNovel} />
       <AuthDialog open={authEnabled === true && activeDialog === "auth"} currentUser={authUser} onLogin={async (identifier, password) => { const result = await session.login(identifier, password); setActiveDialog(undefined); return result; }} onRegister={async (payload) => { const result = await session.register(payload); setActiveDialog(undefined); return result; }} onLogout={async () => { await session.logout(); setActiveDialog(undefined); }} onClose={() => setActiveDialog(undefined)} />
       <MonitoringDialog open={activeDialog === "monitoring"} onClose={() => setActiveDialog(undefined)} />
